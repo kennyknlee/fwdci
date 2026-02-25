@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FWD 危疾產品比較</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; background-color: #f5f5f7; color: #1d1d1f; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .sticky-col { position: sticky; left: 0; z-index: 20; background-color: #ffffff; border-right: 1px solid #f3f4f6; box-shadow: 4px 0 6px -1px rgba(0, 0, 0, 0.05); }
+        .highlight-text { color: #ea580c; font-weight: 700; }
+        
+        /* 彈窗動畫 */
+        .popover-enter-active, .popover-leave-active { transition: opacity 0.2s, transform 0.2s; }
+        .popover-enter-from, .popover-leave-to { opacity: 0; transform: translateY(10px); }
+        
+        .interactive-cell { cursor: pointer; position: relative; transition: background-color 0.2s; }
+        .interactive-cell:hover { background-color: #fff7ed; } 
+        
+        /* 隱藏捲軸 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 自定義紅色高亮樣式 */
+        .red-highlight { color: #dc2626; font-weight: 800; }
+        
+        /* 推演專用樣式 */
+        .sim-total-row { background: linear-gradient(90deg, #fffbeb 0%, #fef3c7 100%); }
+        .preset-btn-active { border-color: #f97316; background-color: #fff7ed; }
+
+        /* 獨家多重保障高亮底色 (Golden Highlight) */
+        .exclusive-bg { 
+            background: linear-gradient(to bottom right, #fffbeb, #fef3c7); 
+            border: 1px solid #fcd34d; 
+            border-radius: 8px; 
+            padding: 8px 4px; 
+            box-shadow: 0 2px 4px rgba(245, 158, 11, 0.1);
+            display: block;
+            margin: -4px; 
+            position: relative;
+            overflow: hidden;
+        }
+        .exclusive-bg::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.6), transparent);
+            transform: skewX(-25deg);
+            animation: shine 3s infinite;
+        }
+        @keyframes shine {
+            0% { left: -100%; }
+            20% { left: 200%; }
+            100% { left: 200%; }
+        }
+        .exclusive-badge {
+            display: inline-block;
+            background-color: #b45309; 
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 99px;
+            margin-top: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+<div id="app" class="flex flex-col min-h-screen" @click="closePopover">
+
+    <!-- 1. 頂部導航 -->
+    <header class="sticky top-0 z-50 glass shadow-sm">
+        <div class="max-w-screen-2xl mx-auto px-4 py-3">
+            <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-orange-600 rounded-lg flex items-center justify-center text-white shadow-orange-200 shadow-lg">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-base font-bold text-gray-900 leading-tight flex items-center">
+                            FWD 危疾產品比較
+                            <span class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded ml-2 shadow-sm">V3.5 Fully Dynamic</span>
+                        </h1>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 items-center">
+                    <!-- 分頁切換 -->
+                    <div class="flex bg-gray-100 p-1 rounded-lg mr-2 border border-gray-200 shadow-inner overflow-x-auto">
+                        <button @click="currentTab = 'comparison'" :class="currentTab === 'comparison' ? 'bg-white text-gray-900 shadow-sm font-bold' : 'text-gray-500 hover:text-gray-700 font-medium'" class="px-4 py-1.5 rounded-md text-xs transition whitespace-nowrap">
+                            <i class="fa-solid fa-table-columns mr-1"></i> 特性比較
+                        </button>
+                        <button @click="currentTab = 'simulation'" :class="currentTab === 'simulation' ? 'bg-white text-gray-900 shadow-sm font-bold' : 'text-gray-500 hover:text-gray-700 font-medium'" class="px-4 py-1.5 rounded-md text-xs transition flex items-center whitespace-nowrap">
+                            <i class="fa-solid fa-person-walking-arrow-right mr-1"></i> 動態人生推演 <span class="ml-1 w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                        </button>
+                    </div>
+
+                    <button v-if="currentTab === 'comparison'" @click.stop="showSelector = !showSelector" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-xs font-bold transition flex items-center border border-gray-200 whitespace-nowrap">
+                        <i class="fa-solid fa-sliders mr-1.5"></i>選擇產品 ({{ selectedProducts.length }})
+                    </button>
+                </div>
+            </div>
+
+            <!-- 產品選擇器 -->
+            <div v-if="showSelector && currentTab === 'comparison'" @click.stop class="mb-3 p-3 bg-white rounded-lg border border-gray-100 shadow-xl grid grid-cols-2 md:grid-cols-5 gap-2 absolute w-full left-0 z-50 px-4">
+                <label v-for="p in allProducts" :key="p.id" class="flex items-center p-2 rounded hover:bg-orange-50 cursor-pointer border border-transparent" :class="{'bg-orange-50': selectedProducts.includes(p.id)}">
+                    <input type="checkbox" :value="p.id" v-model="selectedProducts" class="accent-orange-600 w-4 h-4 mr-2">
+                    <span class="text-xs font-bold text-gray-700">{{ p.shortName }}</span>
+                </label>
+            </div>
+
+            <!-- 焦點過濾器 -->
+            <div v-if="currentTab === 'comparison'" class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar animate-[fadeIn_0.3s_ease-out]">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1 shrink-0">焦點:</span>
+                <button v-for="filter in filters" :key="filter.key" @click="activeFilter = filter.key"
+                    :class="activeFilter === filter.key ? 'bg-gray-900 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'"
+                    class="px-3 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap flex items-center shrink-0">
+                    <i :class="filter.icon" class="mr-1.5"></i> {{ filter.label }}
+                </button>
+                
+                <div class="ml-auto border-l pl-3 border-gray-200 flex items-center gap-2 shrink-0">
+                    <label class="flex items-center cursor-pointer group">
+                        <input type="checkbox" v-model="hideIdentical" class="accent-orange-600 mr-1">
+                        <span class="text-xs font-medium text-gray-500 group-hover:text-gray-700">只顯示不同</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ================= 模式 1: 傳統特性比較表 ================= -->
+    <main v-show="currentTab === 'comparison'" class="flex-grow overflow-x-auto bg-white w-full pb-24 relative">
+        <div class="min-w-[1000px] max-w-screen-2xl mx-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr>
+                        <th class="p-4 w-64 bg-white border-b border-gray-200 sticky-col top-0 z-30 align-bottom">
+                            <div class="text-xs text-gray-400 uppercase font-bold tracking-widest mb-1">Feature Spec</div>
+                            <div class="text-xl font-bold text-gray-900">特性比較</div>
+                        </th>
+                        <th v-for="pid in selectedProducts" :key="pid" class="p-4 min-w-[220px] border-b border-gray-200 align-top group hover:bg-gray-50 transition">
+                            <div class="flex flex-col items-center text-center h-full justify-end pb-2">
+                                <div class="mb-2 w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg shadow-md transition transform group-hover:scale-110" :class="getProduct(pid).colorBadge">
+                                    <i :class="getProduct(pid).icon"></i>
+                                </div>
+                                <h3 class="text-sm font-bold text-gray-900 leading-tight">{{ getProduct(pid).fullName }}</h3>
+                                <div class="mt-2 flex flex-wrap justify-center gap-1">
+                                    <span v-for="tag in getProduct(pid).badges" class="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded border border-gray-200">{{ tag }}</span>
+                                </div>
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-sm">
+                    <template v-for="(category, cIndex) in filteredData" :key="cIndex">
+                        <tr class="bg-gray-50">
+                            <td :colspan="selectedProducts.length + 1" class="px-4 py-2 text-[11px] font-bold text-gray-500 uppercase tracking-widest sticky-col z-20 bg-gray-50 border-y border-gray-200">
+                                <i :class="category.icon" class="mr-1 text-orange-500"></i> {{ category.title }}
+                            </td>
+                        </tr>
+                        <tr v-for="(row, rIndex) in category.rows" :key="rIndex" :class="{'bg-orange-50/40': activeFilter !== 'all' && row.tags.includes(activeFilter)}">
+                            <td class="p-4 font-semibold text-gray-700 sticky-col bg-white border-r border-gray-50">
+                                {{ row.label }}
+                                <div class="mt-1 flex flex-wrap gap-1" v-if="row.subTags">
+                                    <span v-for="st in row.subTags" class="text-[9px] px-1 rounded bg-gray-100 text-gray-400">{{ st }}</span>
+                                </div>
+                            </td>
+                            <td v-for="pid in selectedProducts" :key="pid" 
+                                class="p-4 text-gray-600 align-top text-center border-r border-dashed border-gray-100 last:border-0 interactive-cell"
+                                @click.stop="handleCellClick(pid, row.key, false, null, $event)"
+                                @mouseenter="handleMouseEnter(pid, row.key, false, null, $event)"
+                                @mouseleave="handleMouseLeave"
+                            >
+                                <div class="whitespace-pre-line leading-relaxed relative">
+                                    <template v-if="getDisplayValue(pid, row.key) === true"><i class="fa-solid fa-circle-check text-green-500 text-lg"></i></template>
+                                    <template v-else-if="getDisplayValue(pid, row.key) === false"><span class="text-gray-300">-</span></template>
+                                    <template v-else>
+                                        <span :class="{'highlight-text': isImportant(getDisplayValue(pid, row.key))}">
+                                            {{ getDisplayValue(pid, row.key) }}
+                                        </span>
+                                        <i v-if="hasFullDetail(pid, row.key)" class="fa-solid fa-circle-info text-blue-400 ml-1 text-xs opacity-70"></i>
+                                    </template>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- ================= 模式 2: 動態人生推演 (Dynamic Engine) ================= -->
+    <main v-show="currentTab === 'simulation'" class="flex-grow overflow-x-auto bg-[#fbfbfd] w-full pb-24 relative animate-[fadeIn_0.3s_ease-out]">
+        <div class="max-w-screen-2xl mx-auto p-4 md:p-8">
+            
+            <!-- 載入經典案例 (Preset Loaders) -->
+            <div class="mb-6 flex flex-wrap gap-3 items-center">
+                <span class="text-sm font-bold text-gray-500 py-2">載入預設劇本：</span>
+                <button @click="loadPreset('grace')" :class="activePreset === 'grace' ? 'preset-btn-active font-bold text-orange-700 shadow-md transform scale-105' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'" class="px-4 py-2 rounded-lg border transition flex items-center text-sm">
+                    <i class="fa-solid fa-person-dress mr-2"></i> 1: Grace (單身/早期高槓桿)
+                </button>
+                <button @click="loadPreset('tina')" :class="activePreset === 'tina' ? 'preset-btn-active font-bold text-orange-700 shadow-md transform scale-105' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'" class="px-4 py-2 rounded-lg border transition flex items-center text-sm">
+                    <i class="fa-solid fa-user-nurse mr-2"></i> 2: Tina (家庭/未知疾病)
+                </button>
+                <button @click="loadPreset('peter')" :class="activePreset === 'peter' ? 'preset-btn-active font-bold text-orange-700 shadow-md transform scale-105' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'" class="px-4 py-2 rounded-lg border transition flex items-center text-sm">
+                    <i class="fa-solid fa-user-tie mr-2"></i> 3: Peter (高資產/腦退化)
+                </button>
+            </div>
+
+            <!-- 客戶畫像 Profile Card (Dynamic Variables) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8 flex flex-col md:flex-row items-center gap-6">
+                <div class="w-20 h-20 bg-gradient-to-tr from-pink-400 to-orange-400 rounded-full flex items-center justify-center text-white text-3xl shadow-inner shrink-0">
+                    <i v-if="profile.name === 'Tina'" class="fa-solid fa-user-nurse"></i>
+                    <i v-else-if="profile.name === 'Peter'" class="fa-solid fa-user-tie"></i>
+                    <i v-else class="fa-solid fa-person-dress"></i>
+                </div>
+                <div class="flex-grow w-full">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <label class="text-gray-400 text-xs font-bold uppercase">投保人名字</label>
+                            <input v-model="profile.name" @change="runSimulation" class="mt-1 w-full border border-gray-300 rounded-md px-2 py-1 focus:ring-orange-500 focus:border-orange-500 font-bold text-lg text-gray-900 bg-gray-50">
+                        </div>
+                        <div>
+                            <label class="text-gray-400 text-xs font-bold uppercase">投保歲數</label>
+                            <div class="flex items-center mt-1">
+                                <!-- 綁定 handleAgeChange 觸發智慧連動 -->
+                                <input v-model.number="profile.age" @change="handleAgeChange" type="number" class="w-20 border border-gray-300 rounded-md px-2 py-1 focus:ring-orange-500 font-bold text-lg text-gray-900 bg-gray-50 text-center">
+                                <span class="ml-2 text-xs text-gray-500">歲</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-gray-400 text-xs font-bold uppercase">設定投保額 (HKD)</label>
+                            <input v-model.number="profile.sumAssured" @change="runSimulation" type="number" step="100000" class="mt-1 w-full border border-gray-300 rounded-md px-2 py-1 focus:ring-orange-500 font-bold text-lg text-orange-600 bg-orange-50">
+                        </div>
+                        <div>
+                            <label class="text-gray-400 text-xs font-bold uppercase">附加保障</label>
+                            <div class="flex flex-col gap-1 mt-2">
+                                <label class="flex items-center cursor-pointer">
+                                    <input v-model="profile.hasFamilyCare" @change="runSimulation" type="checkbox" class="w-4 h-4 text-orange-600 rounded border-gray-300">
+                                    <span class="ml-2 text-xs font-bold text-gray-800 bg-orange-50 px-2 py-0.5 rounded">家添守護</span>
+                                </label>
+                                <label class="flex items-center cursor-pointer">
+                                    <input v-model="profile.hasSpouseWaiver" @change="runSimulation" type="checkbox" class="w-4 h-4 text-orange-600 rounded border-gray-300">
+                                    <span class="ml-2 text-xs font-bold text-gray-800 bg-orange-50 px-2 py-0.5 rounded">配偶豁免保費</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 動態推演表格 -->
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mb-8">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[1000px]">
+                        <thead>
+                            <tr>
+                                <th class="p-4 w-72 bg-gray-50 border-b border-gray-200 sticky-col top-0 z-30 align-bottom">
+                                    <div class="text-xs text-gray-500 uppercase font-bold tracking-widest mb-1"><i class="fa-solid fa-timeline text-orange-500 mr-1"></i> Timeline</div>
+                                    <div class="text-lg font-bold text-gray-900">人生階段 / 發生事件</div>
+                                </th>
+                                <th v-for="pid in simulationProducts" :key="pid" class="p-4 min-w-[200px] border-b border-gray-200 bg-gray-50 align-top text-center border-l border-white">
+                                    <div class="mb-2 w-8 h-8 mx-auto rounded-lg flex items-center justify-center text-white text-sm shadow-sm" :class="getProduct(pid).colorBadge">
+                                        <i :class="getProduct(pid).icon"></i>
+                                    </div>
+                                    <h3 class="text-sm font-bold text-gray-900">{{ getProduct(pid).fullName }}</h3>
+                                    <span class="text-[10px] text-gray-500">{{ (pid === 'p5' || pid === 'p4') && profile.hasFamilyCare ? '+ 家添守護' : '(單次賠償)' }}</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <!-- 動態生成的事件行 -->
+                            <tr v-for="(eventRes, index) in calculatedResults" :key="index" class="hover:bg-gray-50 transition group">
+                                <td class="p-4 font-semibold text-gray-800 sticky-col bg-white border-r border-gray-50">
+                                    <div class="flex flex-col">
+                                        <!-- 將歲數變成可直接編輯的輸入框 -->
+                                        <div class="flex items-center text-orange-600 font-bold mb-1 text-sm">
+                                            <i class="fa-regular fa-clock mr-1"></i> 
+                                            <input v-model.number="customEvents[index].age" @change="runSimulation" type="number" class="w-12 bg-transparent border-b border-orange-300 hover:border-orange-500 focus:outline-none focus:border-orange-600 text-center p-0 m-0 transition-colors"> 歲
+                                        </div>
+                                        <span class="text-sm leading-snug">{{ eventRes.title }}</span>
+                                    </div>
+                                </td>
+                                
+                                <td v-for="pid in simulationProducts" :key="pid" 
+                                    class="p-4 text-sm text-gray-600 align-middle text-center border-r border-dashed border-gray-100 last:border-0 interactive-cell"
+                                    @click.stop="handleCellClick(pid, null, true, eventRes, $event)"
+                                    @mouseenter="handleMouseEnter(pid, null, true, eventRes, $event)"
+                                    @mouseleave="handleMouseLeave"
+                                >
+                                    <div class="whitespace-pre-line leading-relaxed relative">
+                                        <span v-html="eventRes.payouts[pid].s"></span>
+                                        <i v-if="eventRes.payouts[pid].f" class="fa-solid fa-hand-pointer text-orange-300 ml-1 text-[10px] opacity-0 group-hover:opacity-100 transition absolute -right-3 top-1"></i>
+                                    </div>
+                                </td>
+                            </tr>
+                            
+                            <!-- 動態總結行 (Total Row) -->
+                            <tr class="sim-total-row border-t-2 border-orange-200">
+                                <td class="p-5 font-bold text-orange-900 sticky-col bg-[#fef3c7] border-r border-orange-100 text-lg shadow-sm">
+                                    <i class="fa-solid fa-sack-dollar text-orange-500 mr-2"></i> 總賠償金額
+                                </td>
+                                <td v-for="pid in simulationProducts" :key="pid" class="p-5 text-center border-r border-orange-100 last:border-0 align-middle">
+                                    <div class="text-xl font-extrabold text-orange-700 whitespace-pre-line leading-tight">
+                                        HKD {{ formatMoney(calculatedTotals[pid] || 0) }}
+                                    </div>
+                                    <div v-if="pid === 'p5' && hasAnnuityTriggered" class="text-[10px] text-orange-600 mt-1 font-bold bg-orange-100/50 inline-block px-2 py-0.5 rounded">
+                                        (未計每年 {{ formatMoney(profile.sumAssured * 0.06) }} 年金)
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 動態分析總結 (Takeaways) - 現在文字內容也是動態的 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8">
+                <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center border-b border-gray-100 pb-3">
+                    <i class="fa-regular fa-lightbulb text-yellow-500 text-xl mr-2"></i> 顧問總結分析 (Takeaways)
+                </h3>
+                <div class="space-y-4 text-sm text-gray-700 leading-relaxed">
+                    <div v-for="t in dynamicTakeaways" :key="t.id" class="flex gap-3">
+                        <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold mt-0.5" :class="t.badgeClass">{{ t.id }}</div>
+                        <p><strong class="text-gray-900">{{ t.title }}：</strong><span v-html="t.text"></span></p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- 智能詳情彈窗 (共用) -->
+    <transition name="popover">
+        <div v-if="popover.show" 
+             class="fixed z-[60] bg-white/95 backdrop-blur-xl border border-gray-200 shadow-2xl rounded-2xl p-5 w-80 md:w-96 text-sm text-gray-700 leading-relaxed pointer-events-none"
+             :style="{ top: popover.y + 'px', left: popover.x + 'px' }">
+            
+            <div class="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
+                <div class="w-6 h-6 rounded flex items-center justify-center text-white text-xs" :class="popover.productColor">
+                    <i :class="popover.productIcon"></i>
+                </div>
+                <span class="font-bold text-gray-900">{{ popover.productName }}</span>
+                <span class="text-xs text-gray-400 ml-auto">{{ popover.featureName }}</span>
+            </div>
+            
+            <div class="text-gray-800 font-medium whitespace-pre-wrap leading-loose" v-html="popover.content"></div>
+            
+            <div class="absolute w-3 h-3 bg-white border-l border-t border-gray-200 transform rotate-45 -top-1.5 left-6 shadow-sm"></div>
+        </div>
+    </transition>
+
+    <footer class="fixed bottom-0 w-full bg-white/90 backdrop-blur border-t border-gray-200 py-2 px-4 z-40 flex justify-between items-center text-[10px] text-gray-400">
+        <span v-if="currentTab === 'comparison'"><i class="fa-solid fa-hand-pointer mr-1"></i> 滑鼠指向帶有 <i class="fa-solid fa-circle-info text-blue-400"></i> 的項目即顯示詳情</span>
+        <span v-else><i class="fa-solid fa-hand-pointer mr-1"></i> 滑鼠指向推演表格的賠償額，即看動態算式與理賠邏輯拆解</span>
+        <span>資料來源: HL138 (Jul 24) | V3.5 Dynamic Engine Fixed</span>
+    </footer>
+
+</div>
+
+<script>
+const { createApp, ref, computed, onMounted } = Vue;
+
+createApp({
+    setup() {
+        const currentTab = ref('simulation'); 
+        const showSelector = ref(false);
+        const activeFilter = ref('all');
+        const hideIdentical = ref(false);
+        const selectedProducts = ref(['p3', 'p4', 'p5']);
+        const popover = ref({ show: false, x: 0, y: 0, content: '', productName: '', featureName: '', productColor: '', productIcon: '' });
+
+        // --- 基礎資料 ---
+        const allProducts = [
+            { id: 'p1', shortName: '好易揀', fullName: '好易揀危疾保障', colorBadge: 'bg-teal-500', icon: 'fa-umbrella', badges: ['定期', '低保費'] },
+            { id: 'p2', shortName: '攻守易', fullName: '攻守易 (系列)', colorBadge: 'bg-blue-500', icon: 'fa-shield-virus', badges: ['癌症', '入門'] },
+            { id: 'p3', shortName: '優易保', fullName: '危疾優易保-摯護您', colorBadge: 'bg-green-500', icon: 'fa-notes-medical', badges: ['免驗身', '三高'] },
+            { id: 'p4', shortName: '應援保', fullName: '危疾應援保(升級版)', colorBadge: 'bg-orange-500', icon: 'fa-users', badges: ['家庭', '127種'] },
+            { id: 'p5', shortName: '緻尚保', fullName: '危疾緻尚保(升級版)', colorBadge: 'bg-purple-600', icon: 'fa-crown', badges: ['1300%', '170種'] }
+        ];
+
+        const filters = [
+            { key: 'all', label: '全部', icon: 'fa-solid fa-list' },
+            { key: 'highlight', label: '重點', icon: 'fa-solid fa-star' },
+            { key: 'cancer', label: '癌症/心臟', icon: 'fa-solid fa-heart-pulse' },
+            { key: 'family', label: '家庭/兒童', icon: 'fa-solid fa-baby-carriage' },
+            { key: 'money', label: '現金/增值', icon: 'fa-solid fa-coins' },
+            { key: 'others', label: '其他/行政', icon: 'fa-solid fa-file-contract' } 
+        ];
+
+        const db = {
+            target: { p1: '年輕一族', p2: '預算有限', p3: '三高/拒保人士', p4: '家庭支柱/父母', p5: '高端/準退休' },
+            type: { p1: '定期危疾', p2: '分紅危疾', p3: '分紅危疾', p4: '分紅危疾', p5: '分紅危疾' },
+            premium_level: { p1: '較低', p2: '較低', p3: '中間', p4: '較高', p5: '最高' },
+            payment_term: { p1: '10/20年/至100歲', p2: '10/15/20/25年', p3: '10/15/20/25年', p4: '10-30年', p5: '10-25年' },
+            diseases: { p1: '62主要+65特別', p2: '1主要(癌)+2特別', p3: '62主要+65特別', p4: '62主要+65特別\n(共127種)', p5: '68主要+102特別\n(共170種)' },
+            critical_benefit: { p1: '100%', p2: '100%', p3: '100%', p4: '100%', p5: '100%' },
+            special_disease: { p1: '20% (每次)', p2: '20% (每次)', p3: '20% (每次)', p4: '20% (每次)', p5: '25% (每次)\n10% (精神科)' },
+            child_disease: { p1: '12種', p2: false, p3: '12種', p4: '12種', p5: '22種' },
+            multiple_claims: { 
+                p1: false, p2: '僅限升級版', p3: false, 
+                p4: {
+                    s: '總賠償高達800-1000%\n(癌症/心/中風等)',
+                    f: '如危疾權益已獲支付，於被保人隨後確診患上癌症、急性心肌梗塞、中風或首次確診患上亞爾茲默氏病、腎衰竭、柏金遜症的情況下：\n\n• <span class="red-highlight">第1及2次賠償</span>分別為<span class="red-highlight">額外原有投保額120%</span>\n• <span class="red-highlight">第3、4、5、6及7次賠償</span>分別為<span class="red-highlight">額外原有投保額150%</span>\n\n保障至100歲'
+                },
+                p5: {
+                    s: '總賠償高達1300%\n(額外120%/150%)',
+                    f: '<span class="red-highlight">總額為原有投保額的1300%</span>\n（癌症組別及非癌症組別的最高限額均爲原有投保額的650%，受限於每組疾病的權益上限）。\n\n其中包括癌症、急性心肌梗塞及中風之多次索償，<span class="red-highlight">每次為額外120%-150%</span>。'
+                }
+            },
+            cancer_wait: { p1: false, p2: '3年 (升級版)', p3: false, p4: '1年(新症)/3年(復發)', p5: '1年(新症)/3年(復發)' },
+            extra_cancer: { p1: false, p2: false, p3: false, p4: false, p5: '額外25% (指定4癌)' },
+            cancer_treatment: { p1: false, p2: '15% (升級版)', p3: false, p4: false, p5: false },
+            ext_cancer_treatment: { p1: false, p2: '每日$600 (中醫/物理)', p3: false, p4: false, p5: false },
+            icu: { p1: '20% (預支)', p2: false, p3: false, p4: '20% (預支)', p5: '20% (預支)\n(+升級版額外50%)' },
+            ext_icu: { p1: false, p2: false, p3: false, p4: '額外50% (升級版)', p5: '額外50% (升級版)' },
+            life_support: { 
+                p1: false, p2: false, p3: false, 
+                p4: {
+                    s: '50% / 100%\n(深切治療/終身服藥)',
+                    f: '若入住深切治療部(ICU)<span class="red-highlight">連續3天或以上</span>，並需使用<span class="red-highlight">侵入性維生支持</span>，且符合以下項目：\n1. 住院連續10天或以上(含ICU時間)\n2. 被醫生確認需終身服藥\n3. 接受全身/脊髓硬膜外麻醉手術\n\n- 符合1項：<span class="red-highlight">額外賠償 50%</span>\n- 符合2項或以上：<span class="red-highlight">額外賠償 100%</span>\n\n(此保單<span class="red-highlight">限獲 1 次賠償</span>，保障至86歲)'
+                },
+                p5: {
+                    s: '50% / 100%\n(最高4次賠償)',
+                    f: '若入住深切治療部(ICU)連續3天或以上，並需使用侵入性維生支持，且符合以下項目：\n1. 住院連續10天或以上(含ICU時間)\n2. 被醫生確認需終身服藥\n3. 接受全身/脊髓硬膜外麻醉手術\n\n- 符合1項：<span class="red-highlight">額外賠償 50%</span>\n- 符合2項或以上：<span class="red-highlight">額外賠償 100%</span>\n\n(此保單<span class="red-highlight">限獲 4 次賠償</span>，保障至86歲)'
+                }
+            },
+            exp_drug: { p1: false, p2: false, p3: false, p4: '20% (升級版)', p5: '20% (實報實銷)' },
+            upfront_boost: { p1: '50% (3大疾病)', p2: '50% (首10年)', p3: '35% / 55%', p4: '35% - 75%', p5: '60% - 90%' },
+            extra_med_topup: { p1: '100% (自選)', p2: false, p3: false, p4: false, p5: false },
+            baby: { p1: false, p2: false, p3: '20% (嬰兒特別)', p4: '出生即受保\n父母/子女額外20%', p5: false },
+            family_care: { 
+                p1: false, p2: false, p3: false, 
+                p4: {
+                    s: '父母/子女額外20%',
+                    f: '家添守護 (自選權益)：\n<span class="red-highlight">父母/子女身故或患上指定危疾</span>(癌症/心/中風)，可獲<span class="red-highlight">額外原有投保額的20%</span>。每名受保父母/子女最高賠償20萬港元/2.5萬美元。'
+                }, 
+                p5: {
+                    s: '父母/子女額外20%\n(+身故20%)',
+                    f: '家添守護 (自選權益)：\n除了<span class="red-highlight">患病賠償20%</span>外，若父母/子女於確診一年內不幸身故，<span class="red-highlight">可額外再獲原有投保額的20%</span>。涵蓋範圍更廣，包括嚴重血管性水腫等兒童疾病(8%)。'
+                }
+            },
+            cash_benefit: { p1: false, p2: false, p3: false, p4: '每月1-2%\n(持續癌症/心臟)', p5: '每月2% / 每年10%\n(持續癌症/心臟)' },
+            infertility: { p1: false, p2: false, p3: false, p4: '10% (生育治療)', p5: '10% (生育治療)' },
+            mental: { p1: false, p2: false, p3: false, p4: false, p5: '0.2% (情緒病診症)' },
+            dementia: { 
+                p1: false, p2: false, p3: false, p4: '多重保障涵蓋至86歲', 
+                p5: {
+                    s: '終身年金 (6%)\n照顧者支援 (5%)',
+                    f: '亞爾茲默氏病或柏金遜症年金：\n就該疾病已賠償主要危疾權益之首次確診日期1年後，將可獲<span class="red-highlight">每年原有投保額之6%的終身年金</span>，<span class="red-highlight">直至保單終止</span>。\n\n照顧者支援權益：\n於確診2年內，實報實銷<span class="red-highlight">賠償高達原有投保額的5%</span>予照顧者報讀之訓練課程或精神科醫生診症費用。'
+                }
+            },
+            death: { p1: '100% 現有保額', p2: '100% 已繳保費', p3: '100% 現有保額', p4: '100% 現有保額', p5: '100% 保額 + 紅利' },
+            compassionate: { p1: false, p2: false, p3: false, p4: false, p5: '額外 10% / 35%' },
+            surrender: { p1: false, p2: '部分回贈', p3: '現金價值', p4: '現金價值', p5: '現金價值' },
+            checkup: { p1: '體檢券 (每2年)', p2: '癌症復康', p3: '身體檢查', p4: '體檢券 (每2年)', p5: '0.2% 現金 (每2年)' },
+            rehab: { p1: '樂活復康', p2: '癌症復康', p3: '臻一尊貴優才', p4: '臻一尊貴優才', p5: '臻一尊貴優才 + 長者關顧' },
+            ext_grace: { p1: false, p2: false, p3: false, p4: false, p5: '延長寬限期' },
+            convertibility: { p1: false, p2: false, p3: false, p4: false, p5: '指定年齡增購權' },
+            waiver: { p1: false, p2: false, p3: '父母/配偶身故豁免', p4: '父母/配偶身故豁免', p5: '父母/配偶身故豁免' }
+        };
+
+        const schema = [
+            {
+                title: '產品定位與概要 (Snapshot)', icon: 'fa-solid fa-address-card',
+                rows: [
+                    { key: 'target', label: '目標客戶', tags: ['all', 'highlight'] },
+                    { key: 'diseases', label: '受保疾病數目', tags: ['all', 'highlight'], subTags: ['主要', '特別'] },
+                    { key: 'upfront_boost', label: '首10-15年贈送保障', tags: ['all', 'highlight', 'money'] },
+                    { key: 'checkup', label: '身體檢查權益', tags: ['all', 'highlight'] }
+                ]
+            },
+            {
+                title: '核心危疾與多重保障', icon: 'fa-solid fa-shield-halved',
+                rows: [
+                    { key: 'multiple_claims', label: '多重危疾賠償', tags: ['all', 'highlight', 'cancer'] },
+                    { key: 'cancer_wait', label: '癌症等候期', tags: ['all', 'cancer'] },
+                    { key: 'dementia', label: '腦退化/柏金遜保障', tags: ['all', 'highlight', 'family'] },
+                    { key: 'icu', label: 'ICU 預支賠償', tags: ['all', 'highlight'] }
+                ]
+            },
+            {
+                title: '癌症深切治療細節', icon: 'fa-solid fa-bed-pulse',
+                rows: [
+                    { key: 'extra_cancer', label: '指定癌症額外賠償', tags: ['cancer'] },
+                    { key: 'cancer_treatment', label: '癌症治療權益', tags: ['cancer'] },
+                    { key: 'life_support', label: '生活守護權益', tags: ['cancer', 'family', 'highlight'] },
+                    { key: 'exp_drug', label: '試驗性藥物賠償', tags: ['cancer', 'highlight'] },
+                    { key: 'cash_benefit', label: '持續危疾現金津貼', tags: ['cancer', 'money', 'highlight'] }
+                ]
+            },
+            {
+                title: '家庭、兒童與醫療', icon: 'fa-solid fa-hands-holding-child',
+                rows: [
+                    { key: 'baby', label: '嬰兒/懷孕權益', tags: ['family'] },
+                    { key: 'child_disease', label: '兒童疾病權益', tags: ['family'] },
+                    { key: 'family_care', label: '家添守護 (父母/子女)', tags: ['family', 'highlight'] },
+                    { key: 'infertility', label: '不孕症治療', tags: ['family'] },
+                    { key: 'mental', label: '精神科/心理輔導', tags: ['family'] },
+                    { key: 'rehab', label: '醫療增值服務', tags: ['family'] }
+                ]
+            },
+            {
+                title: '保單行政與其他條款', icon: 'fa-solid fa-file-contract',
+                rows: [
+                    { key: 'type', label: '產品種類', tags: ['others'] },
+                    { key: 'premium_level', label: '保費級別', tags: ['others'] },
+                    { key: 'payment_term', label: '供款年期', tags: ['others'] },
+                    { key: 'death', label: '身故權益', tags: ['others'] },
+                    { key: 'compassionate', label: '恩恤身故權益', tags: ['others'] },
+                    { key: 'surrender', label: '退保權益', tags: ['others'] },
+                    { key: 'waiver', label: '付款人身故豁免', tags: ['others', 'family'] },
+                    { key: 'convertibility', label: '增購權益', tags: ['others'] }
+                ]
+            }
+        ];
+
+        const getProduct = (id) => allProducts.find(p => p.id === id);
+        const getRawValue = (pid, key) => db[key]?.[pid] ?? '--';
+        const getDisplayValue = (pid, key) => (typeof getRawValue(pid, key) === 'object') ? getRawValue(pid, key).s : getRawValue(pid, key);
+        const getFullDetail = (pid, key) => (typeof getRawValue(pid, key) === 'object') ? getRawValue(pid, key).f : null;
+        const hasFullDetail = (pid, key) => typeof getRawValue(pid, key) === 'object' && getRawValue(pid, key).f;
+        const isImportant = (val) => typeof val === 'string' && (val.includes('1300%') || val.includes('終身') || val.includes('高達') || val.includes('免費'));
+
+        const filteredData = computed(() => {
+            return schema.map(cat => {
+                const rows = cat.rows.filter(row => {
+                    if (activeFilter.value !== 'all' && !row.tags.includes(activeFilter.value)) return false;
+                    if (hideIdentical.value && selectedProducts.value.length > 1) {
+                        const firstVal = getDisplayValue(selectedProducts.value[0], row.key);
+                        return !selectedProducts.value.every(pid => getDisplayValue(pid, row.key) === firstVal);
+                    }
+                    return true;
+                });
+                return { ...cat, rows };
+            }).filter(cat => cat.rows.length > 0);
+        });
+
+        // ================= 動態推演引擎 =================
+        const simulationProducts = ['p5', 'p4', 'p3', 'p1'];
+        const activePreset = ref('peter');
+        
+        const profile = ref({ name: '', age: 0, sumAssured: 0, hasFamilyCare: false, hasSpouseWaiver: false });
+        const oldAge = ref(0); 
+        const customEvents = ref([]);
+        
+        const calculatedResults = ref([]);
+        const calculatedTotals = ref({ p1: 0, p3: 0, p4: 0, p5: 0 });
+        const hasAnnuityTriggered = ref(false);
+
+        // 預設人生劇本字典
+        const presets = {
+            grace: {
+                profile: { name: 'Grace', age: 26, sumAssured: 1000000, hasFamilyCare: true, hasSpouseWaiver: false },
+                events: [
+                    { id: 1, age: 31, type: 'cancer_fertility', label: '首次確診卵巢癌 ＋ 接受生育治療' },
+                    { id: 2, age: 32, type: 'cancer_continuous', label: '持續因卵巢癌接受積極治療' },
+                    { id: 3, age: 35, type: 'child_born', label: '誕下女兒 Emily 並加入「家添守護」' },
+                    { id: 4, age: 40, type: 'child_adhd', label: '女兒確診專注力失調及過度活躍症 (ADHD)' },
+                    { id: 5, age: 50, type: 'head_trauma', label: 'Grace 確診多發性硬化症' }, 
+                    { id: 6, age: 75, type: 'parkinson', label: 'Grace 確診柏金遜症' },
+                    { id: 7, age: 80, type: 'cancer_relapse', label: 'Grace 確診肝癌' }
+                ]
+            },
+            tina: {
+                profile: { name: 'Tina', age: 35, sumAssured: 1200000, hasFamilyCare: true, hasSpouseWaiver: false },
+                events: [
+                    { id: 1, age: 36, type: 'icu_unknown', label: '感染未知病毒，住院 10 天 + ICU 3 天（使用維生支持）' },
+                    { id: 2, age: 40, type: 'mother_cancer', label: '母親確診肺癌' },
+                    { id: 3, age: 42, type: 'spouse_death', label: '配偶因意外身故' },
+                    { id: 4, age: 45, type: 'ami_checkup', label: '首次確診急性心肌梗塞' },
+                    { id: 5, age: 50, type: 'head_trauma', label: '車禍導致嚴重頭部創傷' },
+                    { id: 6, age: 75, type: 'parkinson', label: '確診柏金遜症' }
+                ]
+            },
+            peter: {
+                profile: { name: 'Peter', age: 45, sumAssured: 2000000, hasFamilyCare: true, hasSpouseWaiver: true },
+                events: [
+                    { id: 1, age: 53, type: 'mild_depression', label: '首次確認診斷患上輕微抑鬱症並與精神科醫生進行了5次門診診症 (每次1,800港元)' },
+                    { id: 2, age: 60, type: 'spouse_death', label: '配偶因疾病身故' },
+                    { id: 3, age: 70, type: 'alzheimers', label: '首次確認診斷患有亞爾茲默氏病' },
+                    { id: 4, age: 71, type: 'alzheimers_1yr_later', label: '確診亞爾茲默氏病 1 年後' },
+                    { id: 5, age: 80, type: 'stroke', label: '中風' }
+                ]
+            }
+        };
+
+        const loadPreset = (key) => {
+            activePreset.value = key;
+            const data = presets[key];
+            profile.value = JSON.parse(JSON.stringify(data.profile));
+            oldAge.value = profile.value.age; 
+            customEvents.value = JSON.parse(JSON.stringify(data.events));
+            runSimulation();
+        };
+
+        const formatMoney = (amount) => {
+            if (amount === 0) return '0';
+            if (amount < 10000) return amount.toLocaleString() + '元';
+            return (amount / 10000).toLocaleString(undefined, {maximumFractionDigits: 2}) + '萬';
+        };
+
+        // 處理投保歲數變更，智慧連動所有事件的時間軸
+        const handleAgeChange = () => {
+            if (typeof profile.value.age !== 'number' || isNaN(profile.value.age)) return;
+            
+            const diff = profile.value.age - oldAge.value;
+            if (diff !== 0) {
+                customEvents.value.forEach(evt => {
+                    evt.age += diff; 
+                });
+                oldAge.value = profile.value.age;
+            }
+            runSimulation();
+        };
+
+        // 核心動態運算引擎
+        const runSimulation = () => {
+            const SA = profile.value.sumAssured;
+            const state = {
+                p5: { active: true, total: 0, multiCount: 0, hasChild: false, sa: SA },
+                p4: { active: true, total: 0, multiCount: 0, hasChild: false, sa: SA },
+                p3: { active: true, total: 0, sa: SA },
+                p1: { active: true, total: 0, sa: SA }
+            };
+            hasAnnuityTriggered.value = false;
+            let results = [];
+
+            customEvents.value.forEach(evt => {
+                const policyYear = evt.age - profile.value.age + 1;
+                let eventRes = { type: evt.type, age: evt.age, title: evt.label, payouts: { p1:{s:'',f:''}, p3:{s:'',f:''}, p4:{s:'',f:''}, p5:{s:'',f:''} } };
+
+                // 處理 P5 (緻尚保)
+                if (state.p5.active) {
+                    if (evt.type === 'mild_depression') {
+                        let limit = Math.min(SA * 0.002, 1500);
+                        let payout = limit * 5;
+                        state.p5.total += payout;
+                        eventRes.payouts.p5 = {
+                            s: `<span class="font-bold text-orange-600 text-base">${formatMoney(payout)}</span>\n(實報實銷)`,
+                            f: `觸發「智．守衛權益」。每次診金上限為保額的 0.2% 或 1,500 港元（以較低者為準）。\n每次賠 ${limit} 港元 x 5次 = 總賠償 <span class="red-highlight">${formatMoney(payout)}</span>。`
+                        };
+                    } else if (evt.type === 'alzheimers') {
+                        state.p5.multiCount++;
+                        let payout = SA + (SA * 0.05) + (SA * 0.02 * 12);
+                        state.p5.total += payout;
+                        eventRes.payouts.p5 = {
+                            s: `<span class="font-bold text-orange-600 text-base">${formatMoney(payout)}</span>\n(含津貼)`,
+                            f: `1. 主要危疾賠償：支付 <span class="red-highlight">${formatMoney(SA)} (100%)</span>\n2. 照顧者支援權益：實報實銷上限 <span class="red-highlight">${formatMoney(SA*0.05)} (5%)</span>\n3. 現金津貼：每月派2%，為期12個月，共 <span class="red-highlight">${formatMoney(SA*0.02*12)}</span>\n總賠償：<span class="red-highlight">${formatMoney(payout)}</span>。`
+                        };
+                    } else if (evt.type === 'alzheimers_1yr_later') {
+                        let annuityYears = 15;
+                        let payout = SA * 0.06 * annuityYears;
+                        state.p5.total += payout;
+                        hasAnnuityTriggered.value = true;
+                        eventRes.payouts.p5 = {
+                            s: `每年<span class="font-bold text-orange-600 text-base">${formatMoney(SA*0.06)}</span>\n(終身年金)`,
+                            f: `觸發「亞爾茲默氏病或柏金遜症的終身年金」。\n每年支付保額 6% (<span class="red-highlight">${formatMoney(SA*0.06)}</span>)，直至保單終止。\n\n(此處推演總額以保守估計派發 ${annuityYears} 年計算：共 <span class="red-highlight">${formatMoney(payout)}</span>入帳)`
+                        };
+                    } else if (evt.type === 'stroke') {
+                        state.p5.multiCount++;
+                        let payout = SA * 1.0 + (SA * 0.02 * 12);
+                        state.p5.total += payout;
+                        eventRes.payouts.p5 = {
+                            s: `<span class="font-bold text-orange-600 text-base">${formatMoney(payout)}</span>\n(多重+津貼)`,
+                            f: `雖然曾索償非癌症組，但此組別限額高達 650%。中風屬不同危疾，可再次索償。\n再賠 <span class="red-highlight">${formatMoney(SA)} (100%)</span>。\n再次觸發現金津貼，共 <span class="red-highlight">${formatMoney(SA*0.02*12)}</span>。\n總計：<span class="red-highlight">${formatMoney(payout)}</span>。年金繼續派發。`
+                        };
+                    } else if (evt.type === 'head_trauma') {
+                        let payout = SA * 1.0;
+                        state.p5.total += payout;
+                        eventRes.payouts.p5 = { 
+                            s: `<div class="exclusive-bg"><span class="font-bold text-orange-600 text-base">${formatMoney(payout)}</span><br><span class="exclusive-badge">★ 獨家多重保障</span></div>`, 
+                            f: `屬於其 68 種主要危疾涵蓋範圍。順利觸發<span class="red-highlight">「非癌症組別」</span>多重賠償，再賠 <span class="red-highlight">${formatMoney(payout)}（100%）</span>。<br><br><span class="red-highlight">此乃緻尚保獨有優勢：多重保障不限於 6 大疾病，而是涵蓋所有非癌症類別的主要危疾。</span>` 
+                        };
+                    } else if (evt.type === 'icu_unknown') {
+                        let payout = SA * 0.2 + SA * 0.5;
+                        state.p5.total += payout;
+                        eventRes.payouts.p5 = { s: `<span class="font-bold text-orange-600 text-base">${formatMoney(payout)}</span>\n(額外賠償)`, f: `觸發「重大醫療護理權益」賠 20%（${formatMoney(SA*0.2)}）及「生活守護權益」賠 50%（${formatMoney(SA*0.5)}）。合共 <span class="red-highlight">${formatMoney(payout)}</span>。保額維持 ${formatMoney(state.p5.sa)} 不變。` };
+                    } else if (evt.type === 'mother_cancer') {
+                        let payout = profile.value.hasFamilyCare ? Math.min(SA * 0.2, 200000) : 0;
+                        if (payout > 0) {
+                            state.p5.total += payout;
+                            eventRes.payouts.p5 = { s: `${formatMoney(payout)}\n(達上限)`, f: `觸發「父母之家添守護」權益。賠償保額 20%，但設有每名父母 20 萬港元的上限。因此賠償 <span class="red-highlight">${formatMoney(payout)}</span>。` };
+                        } else {
+                            eventRes.payouts.p5 = { s: `0\n(未加附約)`, f: `未附加家添守護。` };
+                        }
+                    } else if (evt.type === 'spouse_death') {
+                        if (profile.value.hasSpouseWaiver) {
+                            eventRes.payouts.p5 = { s: `<span class="text-green-600 font-bold">0\n(豁免保費)</span>`, f: `因已附加「配偶身故保費豁免權益附約」，<span class="red-highlight">豁免基本保單往後所有保費</span>。` };
+                        } else {
+                            eventRes.payouts.p5 = { s: `0\n(繼續繳費)`, f: `未附加保費豁免附約，基本保單<span class="red-highlight">仍然需要繼續繳交保費</span>。` };
+                        }
+                    } else if (evt.type === 'ami_checkup') {
+                        let extraPct = (profile.value.age <= 35 && policyYear <= 15) ? 0.9 : ((profile.value.age > 35 && policyYear <= 15) ? 0.6 : 0);
+                        let payout = state.p5.sa + (SA * extraPct) + (SA * 0.24);
+                        state.p5.total += payout;
+                        eventRes.payouts.p5 = {
+                            s: `<span class="font-bold text-orange-600 text-base">${formatMoney(payout)}</span>\n+ 豁免保費`,
+                            f: `賠償 100% 保額（${formatMoney(state.p5.sa)}）+ ${extraPct*100}% 早期額外保額（${formatMoney(SA*extraPct)}）。因屬三大疾病，觸發現金權益（每月派 2%，最長 12 個月 = 24% = ${formatMoney(SA*0.24)}）。合共 <span class="red-highlight">${formatMoney(payout)}</span>。豁免餘下保費。`
+                        };
+                    } else if (evt.type === 'parkinson') {
+                        let payout = SA * 1.0;
+                        state.p5.total += payout;
+                        hasAnnuityTriggered.value = true;
+                        eventRes.payouts.p5 = { s: `<span class="font-bold text-orange-600 text-base">${formatMoney(payout)}</span>\n+ 終身年金`, f: `繼續使用非癌症組別限額，再賠 <span class="red-highlight">${formatMoney(payout)}（100%）</span>。\n同時觸發獨有的終身年金，此後<span class="red-highlight">每年獲發 6% 保額（${formatMoney(SA*0.06)}）</span>直至保單終止。` };
+                    } else if (evt.type === 'cancer_fertility') {
+                        let extraPct = (profile.value.age <= 35 && policyYear <= 15) ? 0.9 : ((profile.value.age > 35 && policyYear <= 15) ? 0.6 : 0);
+                        let payout = state.p5.sa + (SA * extraPct) + (SA * 0.1);
+                        state.p5.total += payout;
+                        eventRes.payouts.p5 = { s: `<span class="font-bold text-orange-600 text-base">${formatMoney(payout)}</span>\n+ 豁免保費`, f: `${formatMoney(state.p5.sa)} (基本) + ${formatMoney(SA*extraPct)} (${extraPct*100}%額外保障) + ${formatMoney(SA*0.1)} (10%不孕症治療) = <span class="red-highlight">${formatMoney(payout)}</span>\n\n觸發豁免往後保費。` };
+                    } else if (evt.type === 'cancer_continuous') {
+                        let payout = SA * 0.5;
+                        state.p5.total += payout;
+                        eventRes.payouts.p5 = { s: `${formatMoney(payout)}\n(現金津貼)`, f: `每年獲發 ${formatMoney(SA*0.1)} (保額10%)，最長 5 年 = 合共再賠 <span class="red-highlight">${formatMoney(payout)}</span>。` };
+                    } else if (evt.type === 'child_born') {
+                        state.p5.hasChild = true;
+                        eventRes.payouts.p5 = { s: `<span class="text-blue-600 font-bold text-xs bg-blue-50 px-2 py-1 rounded">納入保障</span>`, f: `成功將女兒納入保障，無需核保或額外保費。` };
+                    } else if (evt.type === 'child_adhd') {
+                        let payout = (SA * 0.15) + (SA * 0.01);
+                        state.p5.total += payout;
+                        eventRes.payouts.p5 = { s: `${formatMoney(payout)}\n(兒童+照顧者)`, f: `「子女之家添守護」涵蓋 ADHD 作為兒童疾病，賠償 15%（${formatMoney(SA*0.15)}）。\n加上「照顧者支援權益」實報實銷 1%（${formatMoney(SA*0.01)}）。合共 <span class="red-highlight">${formatMoney(payout)}</span>。` };
+                    } else if (evt.type === 'cancer_relapse') {
+                        let payout = SA * 1.0; 
+                        state.p5.total += payout;
+                        eventRes.payouts.p5 = { s: `<span class="font-bold text-orange-600 text-base">${formatMoney(payout)}</span>\n(多重保障)`, f: `啟動「癌症組別」限額。再賠 <span class="red-highlight">${formatMoney(payout)}（100%）</span>。` };
+                    }
+                } else {
+                    eventRes.payouts.p5 = { s: '<span class="text-gray-300">-</span>' };
+                }
+
+                // 處理 P4 (應援保)
+                if (state.p4.active) {
+                    if (evt.type === 'mild_depression') {
+                        eventRes.payouts.p4 = { s: `0\n(無此保障)`, f: `應援保不保障輕微精神科疾病。` };
+                    } else if (evt.type === 'alzheimers') {
+                        state.p4.multiCount++;
+                        let payout = SA;
+                        state.p4.total += payout;
+                        eventRes.payouts.p4 = { s: `<span class="font-bold text-orange-600 text-base">${formatMoney(payout)}</span>\n(基本賠償)`, f: `危疾賠償支付 <span class="red-highlight">${formatMoney(payout)} (100%)</span>。\n\n(註：此計劃僅針對癌症、心臟、中風派發現金津貼，亞爾茲默氏病<span class="red-highlight">無現金津貼</span>。)` };
+                    } else if (evt.type === 'alzheimers_1yr_later') {
+                        eventRes.payouts.p4 = { s: `0\n(無此權益)`, f: `應援保無亞爾茲默氏病終身年金權益。` };
+                    } else if (evt.type === 'stroke') {
+                        state.p4.multiCount++;
+                        let payout = (SA * 1.2) + (SA * 0.01 * 12);
+                        state.p4.total += payout;
+                        eventRes.payouts.p4 = {
+                            s: `<span class="font-bold text-orange-600 text-base">${formatMoney(payout)}</span>\n(遞增+津貼)`,
+                            f: `符合 6 大指定疾病。第 ${state.p4.multiCount} 次多重賠償遞增至 <span class="red-highlight">${formatMoney(SA*1.2)} (120%)</span>。\n中風觸發3大疾病現金權益，每月1%，共 <span class="red-highlight">${formatMoney(SA*0.01*12)}</span>。\n總計：<span class="red-highlight">${formatMoney(payout)}</span>。`
+                        };
+                    } else if (evt.type === 'icu_unknown') {
+                        let advance = SA * 0.2;
+                        let extra = SA * 0.5;
+                        state.p4.sa -= advance; 
+                        state.p4.total += advance + extra;
+                        eventRes.payouts.p4 = {
+                            s: `<span class="font-bold text-orange-600 text-base">${formatMoney(advance+extra)}</span>\n(預支+額外)`,
+                            f: `「重大醫療」屬預支賠償 20%（${formatMoney(advance)}，保單現有保額降至 ${formatMoney(state.p4.sa)}）。「生活守護」屬額外賠償 50%（${formatMoney(extra)}）。合共 <span class="red-highlight">${formatMoney(advance+extra)}</span>。`
+                        };
+                    } else if (evt.type === 'mother_cancer') {
+                        let payout = profile.value.hasFamilyCare ? Math.min(SA * 0.2, 200000) : 0;
+                        if (payout > 0) {
+                            state.p4.total += payout;
+                            eventRes.payouts.p4 = { s: `${formatMoney(payout)}\n(達上限)`, f: `觸發「父母之家添守護」權益。賠償保額 20%，但設有每名父母 20 萬港元的上限。因此賠償 <span class="red-highlight">${formatMoney(payout)}</span>。` };
+                        } else {
+                            eventRes.payouts.p4 = { s: `0\n(未加附約)`, f: `未附加家添守護。` };
+                        }
+                    } else if (evt.type === 'spouse_death') {
+                        if (profile.value.hasSpouseWaiver) {
+                            eventRes.payouts.p4 = { s: `<span class="text-green-600 font-bold">0\n(豁免保費)</span>`, f: `因已附加「配偶身故保費豁免權益附約」，<span class="red-highlight">豁免基本保單往後所有保費</span>。` };
+                        } else {
+                            eventRes.payouts.p4 = { s: `0\n(繼續繳費)`, f: `未附加保費豁免附約，基本保單<span class="red-highlight">仍然需要繼續繳交保費</span>。` };
+                        }
+                    } else if (evt.type === 'ami_checkup') {
+                        let extraPct = (profile.value.age <= 35 && policyYear <= 15) ? 0.75 : ((profile.value.age > 35 && policyYear <= 15) ? 0.6 : 0);
+                        let payout = state.p4.sa + (SA * extraPct) + (SA * 0.12);
+                        state.p4.total += payout;
+                        eventRes.payouts.p4 = {
+                            s: `<span class="font-bold text-orange-600 text-base">${formatMoney(payout)}</span>\n+ 豁免保費`,
+                            f: `賠償剩餘保額 100%（${formatMoney(state.p4.sa)}）+ ${extraPct*100}% 早期額外保額（${formatMoney(SA*extraPct)}）。觸發現金權益（每月派 1%，最長 12 個月 = 12% = ${formatMoney(SA*0.12)}）。合共 <span class="red-highlight">${formatMoney(payout)}</span>。豁免餘下保費。`
+                        };
+                    } else if (evt.type === 'head_trauma') {
+                        eventRes.payouts.p4 = { s: `0\n(不在名單內)`, f: `多重保障僅限 6 種指定疾病。「嚴重頭部創傷」<span class="red-highlight">不在名單內，不獲賠償</span>。` };
+                    } else if (evt.type === 'parkinson') {
+                        state.p4.multiCount++;
+                        let pct = state.p4.multiCount <= 2 ? 1.2 : 1.5;
+                        let payout = SA * pct;
+                        state.p4.total += payout;
+                        eventRes.payouts.p4 = { s: `<span class="font-bold text-orange-600 text-base">${formatMoney(payout)}</span>\n(遞增賠償)`, f: `柏金遜症符合 6 大指定疾病，順利觸發第 ${state.p4.multiCount} 次多重索償，賠償率遞增至 ${pct*100}%。賠償 <span class="red-highlight">${formatMoney(payout)}</span>。` };
+                    } else if (evt.type === 'cancer_fertility') {
+                        let extraPct = (profile.value.age <= 35 && policyYear <= 15) ? 0.75 : ((profile.value.age > 35 && policyYear <= 15) ? 0.6 : 0);
+                        let payout = state.p4.sa + (SA * extraPct) + (SA * 0.1);
+                        state.p4.total += payout;
+                        eventRes.payouts.p4 = { s: `<span class="font-bold text-orange-600 text-base">${formatMoney(payout)}</span>\n+ 豁免保費`, f: `${formatMoney(state.p4.sa)} (基本) + ${formatMoney(SA*extraPct)} (${extraPct*100}%額外保障) + ${formatMoney(SA*0.1)} (10%不孕症治療) = <span class="red-highlight">${formatMoney(payout)}</span>\n\n觸發豁免往後保費。` };
+                    } else if (evt.type === 'cancer_continuous') {
+                        let payout = SA * 0.5;
+                        state.p4.total += payout;
+                        eventRes.payouts.p4 = { s: `${formatMoney(payout)}\n(現金津貼)`, f: `每年獲發 ${formatMoney(SA*0.1)} (保額10%)，最長 5 年 = 合共再賠 <span class="red-highlight">${formatMoney(payout)}</span>。` };
+                    } else if (evt.type === 'child_born') {
+                        state.p4.hasChild = true;
+                        eventRes.payouts.p4 = { s: `<span class="text-blue-600 font-bold text-xs bg-blue-50 px-2 py-1 rounded">納入保障</span>`, f: `成功將女兒納入保障，無需核保或額外保費。` };
+                    } else if (evt.type === 'child_adhd') {
+                        eventRes.payouts.p4 = { s: `0\n(不涵蓋)`, f: `其「家添守護」主要針對子女患上「主要危疾」，<span class="red-highlight">並不涵蓋 ADHD 此類兒童疾病</span>。` };
+                    } else if (evt.type === 'cancer_relapse') {
+                        state.p4.multiCount++;
+                        let pct = state.p4.multiCount <= 2 ? 1.2 : 1.5;
+                        let payout = SA * pct;
+                        state.p4.total += payout;
+                        eventRes.payouts.p4 = { s: `<span class="font-bold text-orange-600 text-base">${formatMoney(payout)}</span>\n(遞增賠償)`, f: `癌症屬於 6 大指定疾病，符合第 ${state.p4.multiCount} 次多重索償資格。賠償額遞增至 <span class="red-highlight">${formatMoney(payout)}</span>。` };
+                    }
+                } else {
+                    eventRes.payouts.p4 = { s: '<span class="text-gray-300">-</span>' };
+                }
+
+                // 處理 P3 (優易保)
+                if (state.p3.active) {
+                    if (evt.type === 'alzheimers') {
+                        let payout = SA;
+                        state.p3.total += payout;
+                        state.p3.active = false;
+                        eventRes.payouts.p3 = { s: `${formatMoney(payout)}\n<span class="text-xs text-red-500 font-bold">保單終止</span>`, f: `支付 ${formatMoney(payout)}。\n\n理賠後<span class="red-highlight">保單隨即終止</span>。` };
+                    } else if (evt.type === 'icu_unknown') {
+                        let advance = SA * 0.2;
+                        state.p3.sa -= advance;
+                        state.p3.total += advance;
+                        eventRes.payouts.p3 = { s: `${formatMoney(advance)}\n(預支)`, f: `僅有「重大醫療」預支 20%（${formatMoney(advance)}）。保單現有保額<span class="red-highlight">降至 ${formatMoney(state.p3.sa)}</span>。沒有生活守護權益。` };
+                    } else if (evt.type === 'ami_checkup') {
+                        let extraPct = (policyYear <= 10) ? 0.35 : 0; 
+                        if (profile.value.age <= 35) extraPct = 0.55;
+                        let payout = state.p3.sa + (SA * extraPct);
+                        state.p3.total += payout;
+                        state.p3.active = false;
+                        eventRes.payouts.p3 = { s: `${formatMoney(payout)}\n<span class="text-xs text-red-500 font-bold">保單終止</span>`, f: `賠償剩餘保額 100%（${formatMoney(state.p3.sa)}）+ ${extraPct*100}% 早期額外保額（${formatMoney(SA*extraPct)}）。合共 <span class="red-highlight">${formatMoney(payout)}</span>。保單隨即終止。` };
+                    } else if (evt.type === 'cancer_fertility') {
+                        let extraPct = (policyYear <= 10) ? 0.55 : 0;
+                        let payout = state.p3.sa + (SA * extraPct);
+                        state.p3.total += payout;
+                        state.p3.active = false;
+                        eventRes.payouts.p3 = { s: `${formatMoney(payout)}\n<span class="text-xs text-red-500 font-bold">保單終止</span>`, f: `${formatMoney(state.p3.sa)} (基本) + ${formatMoney(SA*extraPct)} (${extraPct*100}%額外保障) = <span class="red-highlight">${formatMoney(payout)}</span>\n\n無不孕症保障。理賠後保單隨即終止。` };
+                    } else if (evt.type === 'spouse_death') {
+                        if (profile.value.hasSpouseWaiver) {
+                            eventRes.payouts.p3 = { s: `<span class="text-green-600 font-bold">0\n(豁免保費)</span>`, f: `因已附加「配偶身故保費豁免權益附約」，<span class="red-highlight">豁免基本保單往後所有保費</span>。` };
+                        } else {
+                            eventRes.payouts.p3 = { s: `0\n(繼續繳費)`, f: `未附加保費豁免附約，基本保單<span class="red-highlight">仍然需要繼續繳交保費</span>。` };
+                        }
+                    } else {
+                        eventRes.payouts.p3 = { s: `0\n(無此保障)`, f: `無此保障或不在名單內。` };
+                    }
+                } else {
+                    eventRes.payouts.p3 = { s: '<span class="text-gray-300">-</span>', f: `保單已終止，無後續理賠。` };
+                }
+
+                // 處理 P1 (好易揀)
+                if (state.p1.active) {
+                    if (evt.type === 'alzheimers') {
+                        let payout = SA;
+                        state.p1.total += payout;
+                        state.p1.active = false;
+                        eventRes.payouts.p1 = { s: `${formatMoney(payout)}\n<span class="text-xs text-red-500 font-bold">保單終止</span>`, f: `支付 ${formatMoney(payout)}。\n\n理賠後<span class="red-highlight">保單隨即終止</span>。` };
+                    } else if (evt.type === 'ami_checkup' || evt.type === 'cancer_fertility') {
+                        let payout = state.p1.sa;
+                        state.p1.total += payout;
+                        state.p1.active = false;
+                        eventRes.payouts.p1 = { s: `${formatMoney(payout)}\n<span class="text-xs text-red-500 font-bold">保單終止</span>`, f: `賠償 100% 保額。合共 <span class="red-highlight">${formatMoney(payout)}</span>。保單隨即終止。` };
+                    } else if (evt.type === 'spouse_death') {
+                        eventRes.payouts.p1 = { s: `0\n(繼續繳費)`, f: `此計劃<span class="red-highlight">不設</span>配偶身故保費豁免附約，基本保單仍然需要繼續繳交保費。` };
+                    } else {
+                        eventRes.payouts.p1 = { s: `0\n(無此保障)`, f: `無此保障或不涵蓋。` };
+                    }
+                } else {
+                    eventRes.payouts.p1 = { s: '<span class="text-gray-300">-</span>', f: `保單已終止，無後續理賠。` };
+                }
+
+                results.push(eventRes);
+            });
+
+            calculatedResults.value = results;
+            calculatedTotals.value = { p5: state.p5.total, p4: state.p4.total, p3: state.p3.total, p1: state.p1.total };
+        };
+
+        // --- 動態生成總結分析 (Takeaways) ---
+        const dynamicTakeaways = computed(() => {
+            const SA = profile.value.sumAssured;
+            const name = profile.value.name || '客戶';
+            const age = profile.value.age;
+
+            const getAge = (type) => {
+                const evt = customEvents.value.find(e => e.type === type);
+                return evt ? evt.age : '--';
+            };
+
+            if (activePreset.value === 'grace') {
+                const ageCancer = getAge('cancer_fertility');
+                const p4Extra = age <= 35 ? 0.75 : 0.6;
+                const p5Extra = age <= 35 ? 0.9 : 0.6;
+                const p4Pay = SA + (SA * p4Extra) + (SA * 0.1);
+                const p5Pay = SA + (SA * p5Extra) + (SA * 0.1);
+                const ageMS = getAge('head_trauma');
+
+                return [
+                    { id: 1, badgeClass: 'bg-red-100 text-red-600', title: '早期保障的威力', text: `在 ${ageCancer} 歲首次患癌時，各計劃的「早期贈送保額」發揮了極大作用，讓 ${name} 在最需要資金的時期，在不增加保費的情況下獲得了高達 <span class="red-highlight">${formatMoney(p4Pay)} 至 ${formatMoney(p5Pay)}</span> 的賠償。` },
+                    { id: 2, badgeClass: 'bg-blue-100 text-blue-600', title: '單次與多重的天壤之別', text: `單次賠償計劃 (優易保/好易揀) 在 ${name} ${ageCancer} 歲時就已經結束了歷史任務；而具備多重保障的旗艦計劃 (緻尚保/應援保) 則<span class="red-highlight">繼續陪伴長達幾十年</span>，應付隨後老年的多次大病。` },
+                    { id: 3, badgeClass: 'bg-purple-100 text-purple-600', title: '緻尚保 vs 應援保的決戰點', text: `緻尚保大獲全勝的原因在於其 <span class="red-highlight">「不設限」的多重危疾架構</span>（涵蓋所有主要危疾，包括 ${ageMS} 歲的多發性硬化症），以及更全面的「家添守護」細節（涵蓋了兒童常見的 ADHD 及照顧者開支）。` }
+                ];
+            } else if (activePreset.value === 'tina') {
+                const ageIcu = getAge('icu_unknown');
+                const ageTrauma = getAge('head_trauma');
+                const ageParkinson = getAge('parkinson');
+
+                return [
+                    { id: 1, badgeClass: 'bg-red-100 text-red-600', title: `防禦未知疾病 (${ageIcu}歲)`, text: `計劃 1 和 2 透過「生活守護權益」及「重大醫療護理」，成功為連名字都未確定的「未知病毒」提供了高達 <span class="red-highlight">${formatMoney(SA * 0.7)}</span> 的急救資金，補足了傳統危疾險的盲點。` },
+                    { id: 2, badgeClass: 'bg-blue-100 text-blue-600', title: `多重保障的「指定」與「全面」之爭 (${ageTrauma}歲)`, text: `這是計劃 1 和 2 最大的分水嶺。遇到車禍重創這種「非主流」大病時，計劃 1 (緻尚保) 因為是「全面分組（非癌症組別涵蓋神經系統）」而成功賠償 <span class="red-highlight">${formatMoney(SA)}</span>；計劃 2 (應援保) 則因為嚴格限制在「6大疾病」而在此關卡漏接。` },
+                    { id: 3, badgeClass: 'bg-purple-100 text-purple-600', title: `終身照護的巧思 (${ageParkinson}歲)`, text: `到了晚年患上柏金遜，計劃 2 單次賠出 ${formatMoney(SA * 1.2)}；但計劃 1 除了賠出 ${formatMoney(SA)} 外，更提供<span class="red-highlight">每年 ${formatMoney(SA * 0.06)} 的終身年金</span>，這對於需要長期請看護的患者來說，是極具針對性的現金流支援。` }
+                ];
+            } else if (activePreset.value === 'peter') {
+                const ageDepression = getAge('mild_depression');
+                const ageStroke = getAge('stroke');
+                const ageDeath = getAge('spouse_death');
+
+                return [
+                    { id: 1, badgeClass: 'bg-red-100 text-red-600', title: '腦退化症的剋星', text: `「危疾緻尚保（升級版）」亞爾茲默氏病的配套。它不僅給了一筆過賠償，還提供了<span class="red-highlight">每年 ${formatMoney(SA * 0.06)} 的終身年金</span>（長尾效應極強），以及照顧者津貼和每月 2% 的復康現金流。` },
+                    { id: 2, badgeClass: 'bg-blue-100 text-blue-600', title: '精神健康的防護網', text: `只有計劃 1 能夠在 ${ageDepression} 歲 ${name} 患上輕微抑鬱症時提供<span class="red-highlight">實報實銷的支援</span>，這對於高壓工作的專業人士來說非常實用，能及早介入治療。` },
+                    { id: 3, badgeClass: 'bg-purple-100 text-purple-600', title: '多重賠償的力度', text: `雖然「應援保」在中風時（${ageStroke}歲）單次賠出了較高的 ${formatMoney(SA * 1.2)}（120%），但因為<span class="red-highlight">缺乏了針對亞爾茲默氏病的年金和較高的現金津貼</span>（緻尚保非癌症津貼每月 2% vs 應援保中風津貼每月 1%），總賠償額仍落後於緻尚保。` },
+                    { id: 4, badgeClass: 'bg-green-100 text-green-600', title: '配偶豁免的重要性', text: `${name} ${ageDeath} 歲喪偶時正值退休前夕，計劃 1 和 2 成功<span class="red-highlight">豁免了保費</span>，減輕了退休後的固定開支壓力。` }
+                ];
+            }
+            return [];
+        });
+
+        // --- Popover 顯示邏輯 (共用) ---
+        const handleMouseEnter = (pid, keyOrIndex, isSim, eventObj, event) => { if (window.innerWidth > 768) showDetail(pid, keyOrIndex, isSim, eventObj, event); };
+        const handleCellClick = (pid, keyOrIndex, isSim, eventObj, event) => { showDetail(pid, keyOrIndex, isSim, eventObj, event); };
+        const handleMouseLeave = () => { popover.value.show = false; };
+        const closePopover = () => { popover.value.show = false; };
+        
+        const showDetail = (pid, keyOrIndex, isSim, eventObj, event) => {
+            let detail = null, rowLabel = '';
+            if (isSim) {
+                detail = eventObj.payouts[pid]?.f;
+                rowLabel = `${eventObj.age}歲: ${eventObj.title}`;
+            } else {
+                detail = getFullDetail(pid, keyOrIndex);
+                rowLabel = schema.flatMap(c => c.rows).find(r => r.key === keyOrIndex)?.label;
+            }
+            if (!detail) return;
+
+            const rect = event.target.closest('td').getBoundingClientRect();
+            const product = getProduct(pid);
+
+            popover.value = {
+                show: true,
+                x: Math.min(rect.left, window.innerWidth - 350),
+                y: rect.bottom + 10,
+                content: detail,
+                productName: product.fullName,
+                featureName: rowLabel,
+                productColor: product.colorBadge,
+                productIcon: product.icon
+            };
+        };
+
+        // 初始化
+        onMounted(() => {
+            loadPreset('peter'); // 預設載入 Peter 案例展示
+        });
+
+        return { 
+            currentTab, showSelector, activeFilter, filters, hideIdentical, selectedProducts, allProducts, 
+            filteredData, getProduct, getDisplayValue, isImportant, hasFullDetail,
+            popover, handleCellClick, handleMouseEnter, handleMouseLeave, closePopover,
+            // 推演變數
+            activePreset, loadPreset, profile, customEvents, runSimulation, handleAgeChange,
+            calculatedResults, calculatedTotals, formatMoney, hasAnnuityTriggered, simulationProducts,
+            dynamicTakeaways // 已暴露此計算屬性
+        };
+    }
+}).mount('#app');
+</script>
+
+</body>
+</html>
