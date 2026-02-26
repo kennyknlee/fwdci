@@ -94,7 +94,7 @@
                     <div>
                         <h1 class="text-base font-bold text-gray-900 leading-tight flex items-center">
                             FWD 危疾產品比較
-                            <span class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded ml-2 shadow-sm">V3.5 Fully Dynamic</span>
+                            <span class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded ml-2 shadow-sm">V3.6 Fully Dynamic</span>
                         </h1>
                     </div>
                 </div>
@@ -368,7 +368,7 @@
     <footer class="fixed bottom-0 w-full bg-white/90 backdrop-blur border-t border-gray-200 py-2 px-4 z-40 flex justify-between items-center text-[10px] text-gray-400">
         <span v-if="currentTab === 'comparison'"><i class="fa-solid fa-hand-pointer mr-1"></i> 滑鼠指向帶有 <i class="fa-solid fa-circle-info text-blue-400"></i> 的項目即顯示詳情</span>
         <span v-else><i class="fa-solid fa-hand-pointer mr-1"></i> 滑鼠指向推演表格的賠償額，即看動態算式與理賠邏輯拆解</span>
-        <span>資料來源: HL138 (Jul 24) | V3.5 Dynamic Engine Fixed</span>
+        <span>資料來源: HL138 (Jul 24) | V3.6 Dynamic Engine Fixed</span>
     </footer>
 
 </div>
@@ -563,7 +563,7 @@ createApp({
         const calculatedTotals = ref({ p1: 0, p3: 0, p4: 0, p5: 0 });
         const hasAnnuityTriggered = ref(false);
 
-        // 預設人生劇本字典
+        // 預設人生劇本字典 (移除了固定的 takeaways 數據，改由 dynamicTakeaways 計算)
         const presets = {
             grace: {
                 profile: { name: 'Grace', age: 26, sumAssured: 1000000, hasFamilyCare: true, hasSpouseWaiver: false },
@@ -585,6 +585,7 @@ createApp({
                     { id: 3, age: 42, type: 'spouse_death', label: '配偶因意外身故' },
                     { id: 4, age: 45, type: 'ami_checkup', label: '首次確診急性心肌梗塞' },
                     { id: 5, age: 50, type: 'head_trauma', label: '車禍導致嚴重頭部創傷' },
+                    { id: 7, age: 60, type: 'coma', label: '再次意外導致昏迷4天' }, // 新增：60歲昏迷
                     { id: 6, age: 75, type: 'parkinson', label: '確診柏金遜症' }
                 ]
             },
@@ -680,12 +681,13 @@ createApp({
                             s: `<span class="font-bold text-orange-600 text-base">${formatMoney(payout)}</span>\n(多重+津貼)`,
                             f: `雖然曾索償非癌症組，但此組別限額高達 650%。中風屬不同危疾，可再次索償。\n再賠 <span class="red-highlight">${formatMoney(SA)} (100%)</span>。\n再次觸發現金津貼，共 <span class="red-highlight">${formatMoney(SA*0.02*12)}</span>。\n總計：<span class="red-highlight">${formatMoney(payout)}</span>。年金繼續派發。`
                         };
-                    } else if (evt.type === 'head_trauma') {
+                    } else if (evt.type === 'head_trauma' || evt.type === 'coma') {
                         let payout = SA * 1.0;
                         state.p5.total += payout;
+                        let sicknessName = evt.type === 'coma' ? '昏迷' : '嚴重頭部創傷';
                         eventRes.payouts.p5 = { 
                             s: `<div class="exclusive-bg"><span class="font-bold text-orange-600 text-base">${formatMoney(payout)}</span><br><span class="exclusive-badge">★ 獨家多重保障</span></div>`, 
-                            f: `屬於其 68 種主要危疾涵蓋範圍。順利觸發<span class="red-highlight">「非癌症組別」</span>多重賠償，再賠 <span class="red-highlight">${formatMoney(payout)}（100%）</span>。<br><br><span class="red-highlight">此乃緻尚保獨有優勢：多重保障不限於 6 大疾病，而是涵蓋所有非癌症類別的主要危疾。</span>` 
+                            f: `「${sicknessName}」屬於其 68 種主要危疾涵蓋範圍。順利觸發<span class="red-highlight">「非癌症組別」</span>多重賠償，再賠 <span class="red-highlight">${formatMoney(payout)}（100%）</span>。<br><br><span class="red-highlight">此乃緻尚保獨有優勢：多重保障不限於 6 大疾病，而是涵蓋所有非癌症類別的主要危疾。</span>` 
                         };
                     } else if (evt.type === 'icu_unknown') {
                         let payout = SA * 0.2 + SA * 0.5;
@@ -762,6 +764,9 @@ createApp({
                             s: `<span class="font-bold text-orange-600 text-base">${formatMoney(payout)}</span>\n(遞增+津貼)`,
                             f: `符合 6 大指定疾病。第 ${state.p4.multiCount} 次多重賠償遞增至 <span class="red-highlight">${formatMoney(SA*1.2)} (120%)</span>。\n中風觸發3大疾病現金權益，每月1%，共 <span class="red-highlight">${formatMoney(SA*0.01*12)}</span>。\n總計：<span class="red-highlight">${formatMoney(payout)}</span>。`
                         };
+                    } else if (evt.type === 'head_trauma' || evt.type === 'coma') {
+                        let sicknessName = evt.type === 'coma' ? '昏迷' : '嚴重頭部創傷';
+                        eventRes.payouts.p4 = { s: `0\n(不在名單內)`, f: `多重保障僅限 6 種指定疾病。「${sicknessName}」<span class="red-highlight">不在名單內，不獲賠償</span>。` };
                     } else if (evt.type === 'icu_unknown') {
                         let advance = SA * 0.2;
                         let extra = SA * 0.5;
@@ -793,8 +798,6 @@ createApp({
                             s: `<span class="font-bold text-orange-600 text-base">${formatMoney(payout)}</span>\n+ 豁免保費`,
                             f: `賠償剩餘保額 100%（${formatMoney(state.p4.sa)}）+ ${extraPct*100}% 早期額外保額（${formatMoney(SA*extraPct)}）。觸發現金權益（每月派 1%，最長 12 個月 = 12% = ${formatMoney(SA*0.12)}）。合共 <span class="red-highlight">${formatMoney(payout)}</span>。豁免餘下保費。`
                         };
-                    } else if (evt.type === 'head_trauma') {
-                        eventRes.payouts.p4 = { s: `0\n(不在名單內)`, f: `多重保障僅限 6 種指定疾病。「嚴重頭部創傷」<span class="red-highlight">不在名單內，不獲賠償</span>。` };
                     } else if (evt.type === 'parkinson') {
                         state.p4.multiCount++;
                         let pct = state.p4.multiCount <= 2 ? 1.2 : 1.5;
@@ -919,11 +922,12 @@ createApp({
             } else if (activePreset.value === 'tina') {
                 const ageIcu = getAge('icu_unknown');
                 const ageTrauma = getAge('head_trauma');
+                const ageComa = getAge('coma');
                 const ageParkinson = getAge('parkinson');
 
                 return [
                     { id: 1, badgeClass: 'bg-red-100 text-red-600', title: `防禦未知疾病 (${ageIcu}歲)`, text: `計劃 1 和 2 透過「生活守護權益」及「重大醫療護理」，成功為連名字都未確定的「未知病毒」提供了高達 <span class="red-highlight">${formatMoney(SA * 0.7)}</span> 的急救資金，補足了傳統危疾險的盲點。` },
-                    { id: 2, badgeClass: 'bg-blue-100 text-blue-600', title: `多重保障的「指定」與「全面」之爭 (${ageTrauma}歲)`, text: `這是計劃 1 和 2 最大的分水嶺。遇到車禍重創這種「非主流」大病時，計劃 1 (緻尚保) 因為是「全面分組（非癌症組別涵蓋神經系統）」而成功賠償 <span class="red-highlight">${formatMoney(SA)}</span>；計劃 2 (應援保) 則因為嚴格限制在「6大疾病」而在此關卡漏接。` },
+                    { id: 2, badgeClass: 'bg-blue-100 text-blue-600', title: `多重保障的「指定」與「全面」之爭 (${ageTrauma}歲及${ageComa}歲)`, text: `這是計劃 1 和 2 最大的分水嶺。遇到車禍重創(${ageTrauma}歲)及意外昏迷(${ageComa}歲)這種「非主流」大病時，計劃 1 (緻尚保) 因為是「全面分組（非癌症組別涵蓋神經系統）」而連續兩次成功賠償 <span class="red-highlight">${formatMoney(SA)}</span>；計劃 2 (應援保) 則因為嚴格限制在「6大疾病」而在此兩關漏接。` },
                     { id: 3, badgeClass: 'bg-purple-100 text-purple-600', title: `終身照護的巧思 (${ageParkinson}歲)`, text: `到了晚年患上柏金遜，計劃 2 單次賠出 ${formatMoney(SA * 1.2)}；但計劃 1 除了賠出 ${formatMoney(SA)} 外，更提供<span class="red-highlight">每年 ${formatMoney(SA * 0.06)} 的終身年金</span>，這對於需要長期請看護的患者來說，是極具針對性的現金流支援。` }
                 ];
             } else if (activePreset.value === 'peter') {
