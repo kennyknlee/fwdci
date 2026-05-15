@@ -7,6 +7,10 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; background-color: #f5f5f7; color: #1d1d1f; }
         .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,0,0,0.05); }
@@ -74,7 +78,6 @@
 
 <div id="app" class="flex flex-col min-h-screen" @click="closePopover">
 
-    <!-- 1. 頂部導航 -->
     <header class="sticky top-0 z-50 glass shadow-sm">
         <div class="max-w-screen-2xl mx-auto px-4 py-3">
             <div class="flex justify-between items-center mb-3">
@@ -85,13 +88,12 @@
                     <div>
                         <h1 class="text-base font-bold text-gray-900 leading-tight flex items-center">
                             FWD 危疾產品比較
-                            <span class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded ml-2 shadow-sm">V3.15</span>
+                            <span class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded ml-2 shadow-sm">V3.17 Selective View Fix</span>
                         </h1>
                     </div>
                 </div>
 
                 <div class="flex gap-2 items-center">
-                    <!-- 分頁切換 -->
                     <div class="flex bg-gray-100 p-1 rounded-lg mr-2 border border-gray-200 shadow-inner overflow-x-auto">
                         <button @click="currentTab = 'comparison'" :class="currentTab === 'comparison' ? 'bg-white text-gray-900 shadow-sm font-bold' : 'text-gray-500 hover:text-gray-700 font-medium'" class="px-4 py-1.5 rounded-md text-xs transition whitespace-nowrap">
                             <i class="fa-solid fa-table-columns mr-1"></i> 特性比較
@@ -99,11 +101,9 @@
                         <button @click="currentTab = 'simulation'" :class="currentTab === 'simulation' ? 'bg-white text-gray-900 shadow-sm font-bold' : 'text-gray-500 hover:text-gray-700 font-medium'" class="px-4 py-1.5 rounded-md text-xs transition flex items-center whitespace-nowrap">
                             <i class="fa-solid fa-person-walking-arrow-right mr-1"></i> 動態人生推演 <span class="ml-1 w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
                         </button>
-                        <!-- 應援保全覽分頁 -->
                         <button @click="currentTab = 'p4_overview'" :class="currentTab === 'p4_overview' ? 'bg-white text-gray-900 shadow-sm font-bold' : 'text-gray-500 hover:text-gray-700 font-medium'" class="px-4 py-1.5 rounded-md text-xs transition flex items-center whitespace-nowrap">
                             <i class="fa-solid fa-file-excel text-orange-600 mr-1"></i> 應援保全覽
                         </button>
-                        <!-- 緻尚保全覽分頁 -->
                         <button @click="currentTab = 'p5_overview'" :class="currentTab === 'p5_overview' ? 'bg-white text-gray-900 shadow-sm font-bold' : 'text-gray-500 hover:text-gray-700 font-medium'" class="px-4 py-1.5 rounded-md text-xs transition flex items-center whitespace-nowrap">
                             <i class="fa-solid fa-crown text-purple-600 mr-1"></i> 緻尚保全覽
                         </button>
@@ -115,7 +115,6 @@
                 </div>
             </div>
 
-            <!-- 產品選擇器 -->
             <div v-if="showSelector && currentTab === 'comparison'" @click.stop class="mb-3 p-3 bg-white rounded-lg border border-gray-100 shadow-xl grid grid-cols-2 md:grid-cols-5 gap-2 absolute w-full left-0 z-50 px-4">
                 <label v-for="p in allProducts" :key="p.id" class="flex items-center p-2 rounded hover:bg-orange-50 cursor-pointer border border-transparent" :class="{'bg-orange-50': selectedProducts.includes(p.id)}">
                     <input type="checkbox" :value="p.id" v-model="selectedProducts" class="accent-orange-600 w-4 h-4 mr-2">
@@ -123,7 +122,6 @@
                 </label>
             </div>
 
-            <!-- 焦點過濾器 -->
             <div v-if="currentTab === 'comparison'" class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar animate-[fadeIn_0.3s_ease-out]">
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1 shrink-0">焦點:</span>
                 <button v-for="filter in filters" :key="filter.key" @click="activeFilter = filter.key"
@@ -142,7 +140,6 @@
         </div>
     </header>
 
-    <!-- ================= 模式 1: 傳統特性比較表 ================= -->
     <main v-show="currentTab === 'comparison'" class="flex-grow overflow-x-auto bg-white w-full pb-24 relative">
         <div class="min-w-[1000px] max-w-screen-2xl mx-auto">
             <table class="w-full text-left border-collapse">
@@ -158,7 +155,6 @@
                                     <i :class="getProduct(pid).icon"></i>
                                 </div>
                                 
-                                <!-- 應援保(升級版) 專屬跳轉按鈕邏輯 -->
                                 <h3 v-if="pid === 'p4'" 
                                     @click.stop="currentTab = 'p4_overview'" 
                                     class="text-sm font-bold text-orange-600 leading-tight cursor-pointer flex items-center justify-center gap-1 bg-orange-50 px-3 py-1.5 rounded-lg border border-orange-200 hover:bg-orange-100 hover:shadow-sm transition" 
@@ -166,7 +162,6 @@
                                     {{ getProduct(pid).fullName }} 
                                     <i class="fa-solid fa-up-right-from-square text-[10px]"></i>
                                 </h3>
-                                <!-- 緻尚保(升級版) 專屬跳轉按鈕邏輯 -->
                                 <h3 v-else-if="pid === 'p5'" 
                                     @click.stop="currentTab = 'p5_overview'" 
                                     class="text-sm font-bold text-purple-600 leading-tight cursor-pointer flex items-center justify-center gap-1 bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-200 hover:bg-purple-100 hover:shadow-sm transition" 
@@ -174,7 +169,6 @@
                                     {{ getProduct(pid).fullName }} 
                                     <i class="fa-solid fa-up-right-from-square text-[10px]"></i>
                                 </h3>
-                                <!-- 其他產品普通顯示 -->
                                 <h3 v-else class="text-sm font-bold text-gray-900 leading-tight">{{ getProduct(pid).fullName }}</h3>
                                 
                                 <div class="mt-2 flex flex-wrap justify-center gap-1">
@@ -222,11 +216,9 @@
         </div>
     </main>
 
-    <!-- ================= 模式 2: 動態人生推演 (Dynamic Engine) ================= -->
     <main v-show="currentTab === 'simulation'" class="flex-grow overflow-x-auto bg-[#fbfbfd] w-full pb-24 relative animate-[fadeIn_0.3s_ease-out]">
         <div class="max-w-screen-2xl mx-auto p-4 md:p-8">
             
-            <!-- 載入經典案例 -->
             <div class="mb-6 flex flex-wrap gap-3 items-center">
                 <span class="text-sm font-bold text-gray-500 py-2">載入預設劇本：</span>
                 <button @click="loadPreset('grace')" :class="activePreset === 'grace' ? 'preset-btn-active font-bold text-orange-700 shadow-md transform scale-105' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'" class="px-4 py-2 rounded-lg border transition flex items-center text-sm">
@@ -240,7 +232,6 @@
                 </button>
             </div>
 
-            <!-- 客戶畫像 Profile Card -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8 flex flex-col md:flex-row items-center gap-6">
                 <div class="w-20 h-20 bg-gradient-to-tr from-pink-400 to-orange-400 rounded-full flex items-center justify-center text-white text-3xl shadow-inner shrink-0">
                     <i v-if="profile.name === 'Tina'" class="fa-solid fa-user-nurse"></i>
@@ -256,7 +247,12 @@
                         <div>
                             <label class="text-gray-400 text-xs font-bold uppercase">投保歲數</label>
                             <div class="flex items-center mt-1">
-                                <input v-model.number="profile.age" @change="handleAgeChange" type="number" class="w-20 border border-gray-300 rounded-md px-2 py-1 focus:ring-orange-500 font-bold text-lg text-gray-900 bg-gray-50 text-center">
+                                <template v-if="!isExporting">
+                                    <input v-model.number="profile.age" @change="handleAgeChange" type="number" class="w-20 border border-gray-300 rounded-md px-2 py-1 focus:ring-orange-500 font-bold text-lg text-gray-900 bg-gray-50 text-center">
+                                </template>
+                                <template v-else>
+                                    <span class="w-20 text-center font-bold text-lg text-gray-900">{{ profile.age }}</span>
+                                </template>
                                 <span class="ml-2 text-xs text-gray-500">歲</span>
                             </div>
                         </div>
@@ -281,10 +277,28 @@
                 </div>
             </div>
 
-            <!-- 動態推演表格 -->
+            <div class="flex flex-wrap items-center gap-2 mb-3">
+                <span class="text-sm font-bold text-gray-500 mr-1"><i class="fa-solid fa-eye mr-1"></i>顯示比較產品：</span>
+                <button @click="simSelected = ['p5', 'p4', 'p3', 'p1']" :class="simSelected.length === 4 ? 'bg-gray-800 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'" class="px-4 py-1.5 rounded-full text-xs font-bold transition">
+                    全部顯示
+                </button>
+                <button @click="toggleSimProduct('p5')" :class="simSelected.includes('p5') ? 'bg-purple-600 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'" class="px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center">
+                    緻尚保
+                </button>
+                <button @click="toggleSimProduct('p4')" :class="simSelected.includes('p4') ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'" class="px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center">
+                    應援保
+                </button>
+                <button @click="toggleSimProduct('p3')" :class="simSelected.includes('p3') ? 'bg-green-500 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'" class="px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center">
+                    優易保
+                </button>
+                <button @click="toggleSimProduct('p1')" :class="simSelected.includes('p1') ? 'bg-teal-500 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'" class="px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center">
+                    好易揀
+                </button>
+            </div>
+
             <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mb-8">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse min-w-[1000px]">
+                    <table class="w-full text-left border-collapse min-w-max md:min-w-full">
                         <thead>
                             <tr>
                                 <th class="p-4 w-72 bg-gray-50 border-b border-gray-200 sticky-col top-0 z-30 align-bottom">
@@ -322,7 +336,13 @@
                                     <div class="flex flex-col">
                                         <div class="flex items-center text-orange-600 font-bold mb-1 text-sm">
                                             <i class="fa-regular fa-clock mr-1"></i> 
-                                            <input v-model.number="customEvents[index].age" @change="runSimulation" type="number" class="w-12 bg-transparent border-b border-orange-300 hover:border-orange-500 focus:outline-none focus:border-orange-600 text-center p-0 m-0 transition-colors"> 歲
+                                            <template v-if="!isExporting">
+                                                <input v-model.number="customEvents[index].age" @change="runSimulation" type="number" class="w-12 bg-transparent border-b border-orange-300 hover:border-orange-500 focus:outline-none focus:border-orange-600 text-center p-0 m-0 transition-colors">
+                                            </template>
+                                            <template v-else>
+                                                <span class="w-12 text-center inline-block border-b border-orange-300">{{ customEvents[index].age }}</span>
+                                            </template>
+                                            <span class="ml-1">歲</span>
                                         </div>
                                         <span class="text-sm leading-snug">{{ eventRes.title }}</span>
                                     </div>
@@ -359,7 +379,6 @@
                 </div>
             </div>
 
-            <!-- 動態分析總結 (Takeaways) -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8">
                 <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center border-b border-gray-100 pb-3">
                     <i class="fa-regular fa-lightbulb text-yellow-500 text-xl mr-2"></i> 顧問總結分析 (Takeaways)
@@ -375,7 +394,6 @@
         </div>
     </main>
 
-    <!-- ================= 模式 3: 危疾應援保(升級版) 賠償機制全覽 ================= -->
     <main v-show="currentTab === 'p4_overview'" class="flex-grow overflow-x-auto bg-[#fbfbfd] w-full pb-24 relative animate-[fadeIn_0.3s_ease-out]">
         <div class="max-w-screen-xl mx-auto p-4 md:p-8">
             
@@ -384,7 +402,7 @@
                     <h2 class="text-2xl md:text-3xl font-bold mb-2 flex items-center">
                         <i class="fa-solid fa-file-excel mr-3 opacity-90"></i>危疾應援保 (升級版) 賠償機制全覽
                     </h2>
-                    <p class="text-orange-100 text-sm">完整 7 項條款一目了然，完美展現產品極致槓桿威力。</p>
+                    <p class="text-orange-100 text-sm">完整 9 項條款一目了然，完美展現產品極致槓桿威力。</p>
                 </div>
                 
                 <div class="bg-white/20 p-1.5 rounded-xl flex items-center backdrop-blur-sm shadow-inner shrink-0">
@@ -439,7 +457,6 @@
         </div>
     </main>
 
-    <!-- ================= 模式 4: 危疾緻尚保(升級版) 賠償機制全覽 ================= -->
     <main v-show="currentTab === 'p5_overview'" class="flex-grow overflow-x-auto bg-[#fbfbfd] w-full pb-24 relative animate-[fadeIn_0.3s_ease-out]">
         <div class="max-w-screen-xl mx-auto p-4 md:p-8">
             
@@ -499,12 +516,11 @@
             </div>
             
             <div class="mt-4 text-right text-xs text-gray-400">
-                註：以上為最高可獲賠償之上限試算，總結百分比不包含無上限之終身年金，且「家添守護」未計算在基礎總額內。實際賠償受限於保單條款及細則。
+                註：以上為最高可獲賠償之上限試算，實際賠償受限於保單條款及細則。
             </div>
         </div>
     </main>
 
-    <!-- 智能詳情彈窗 (共用) -->
     <transition name="popover">
         <div v-if="popover.show" 
              class="fixed z-[60] bg-white/95 backdrop-blur-xl border border-gray-200 shadow-2xl rounded-2xl p-5 w-80 md:w-96 text-sm text-gray-700 leading-relaxed pointer-events-none"
@@ -524,11 +540,24 @@
         </div>
     </transition>
 
+        <button v-if="!isExporting" data-html2canvas-ignore="true" @click="exportToPDF" 
+            class="fixed bottom-16 right-6 z-[100] bg-gray-800 hover:bg-gray-900 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-2xl transition transform hover:scale-105 border border-gray-600 group"
+            title="匯出為 PDF (適合通訊軟體傳輸)">
+        <i class="fa-solid fa-file-pdf text-xl group-hover:animate-pulse"></i>
+         </button>
+    
+        <div v-if="isExporting" data-html2canvas-ignore="true" class="fixed inset-0 z-[100] bg-white/70 backdrop-blur-sm flex items-center justify-center pointer-events-none">
+        <div class="bg-white px-6 py-4 rounded-xl shadow-xl flex items-center gap-3 border border-gray-200">
+            <i class="fa-solid fa-spinner fa-spin text-orange-600 text-xl"></i>
+            <span class="font-bold text-gray-700">正在最佳化並生成 PDF，請稍候...</span>
+        </div>
+        </div>
+
     <footer class="fixed bottom-0 w-full bg-white/90 backdrop-blur border-t border-gray-200 py-2 px-4 z-40 flex justify-between items-center text-[10px] text-gray-400">
         <span v-if="currentTab === 'comparison'"><i class="fa-solid fa-hand-pointer mr-1"></i> 滑鼠指向帶有 <i class="fa-solid fa-circle-info text-blue-400"></i> 的項目即顯示詳情</span>
         <span v-else-if="currentTab === 'simulation'"><i class="fa-solid fa-hand-pointer mr-1"></i> 滑鼠指向推演表格的賠償額，即看動態算式與理賠邏輯拆解</span>
         <span v-else>💡 切換上方按鈕，查看不同年齡段的最高賠償上限。</span>
-        <span>資料來源: HL138 (Jul 24) | V3.14 2084% Limit</span>
+        <span>資料來源: HL138 (Jul 24) | V3.17 Selective View Fix</span>
     </footer>
 
 </div>
@@ -538,12 +567,15 @@ const { createApp, ref, computed, onMounted } = Vue;
 
 createApp({
     setup() {
-        const currentTab = ref('comparison'); 
+        const currentTab = ref('simulation'); 
         const showSelector = ref(false);
         const activeFilter = ref('all');
         const hideIdentical = ref(false);
         const selectedProducts = ref(['p3', 'p4', 'p5']);
         const popover = ref({ show: false, x: 0, y: 0, content: '', productName: '', featureName: '', productColor: '', productIcon: '' });
+        
+        // 新增：匯出狀態變數
+        const isExporting = ref(false);
 
         // --- 基礎資料 ---
         const allProducts = [
@@ -575,11 +607,11 @@ createApp({
             multiple_claims: { 
                 p1: false, p2: '僅限升級版', p3: false, 
                 p4: {
-                    s: '總賠償高達990%\n(癌症/心/中風等)',
+                    s: '總賠償高達800-1000%\n(癌症/心/中風等)',
                     f: '如危疾權益已獲支付，於被保人隨後確診患上癌症、急性心肌梗塞、中風或首次確診患上亞爾茲默氏病、腎衰竭、柏金遜症的情況下：\n\n• <span class="red-highlight">第1及2次賠償</span>分別為<span class="red-highlight">額外原有投保額120%</span>\n• <span class="red-highlight">第3、4、5、6及7次賠償</span>分別為<span class="red-highlight">額外原有投保額150%</span>\n\n保障至100歲'
                 },
                 p5: {
-                    s: '總賠償高達1300%\n( 所有主要危險疾病 )',
+                    s: '總賠償高達1300%\n(額外120%/150%)',
                     f: '<span class="red-highlight">總額為原有投保額的1300%</span>\n（<span class="red-highlight">所有主要危險疾病</span>的最高限額均爲原有投保額的<span class="red-highlight">650%</span>，受限於每組疾病的權益上限）'
                 }
             },
@@ -601,14 +633,14 @@ createApp({
                 }
             },
             exp_drug: { p1: false, p2: false, p3: false, p4: '20% (升級版)', p5: '20% (實報實銷)' },
-            upfront_boost: { p1: '50% (3大疾病)', p2: '50% (首10年)', p3: '35% / 55%', p4: '60% or 75%', p5: '60% or 90%' },
+            upfront_boost: { p1: '50% (3大疾病)', p2: '50% (首10年)', p3: '35% / 55%', p4: '35% - 75%', p5: '60% - 90%' },
             extra_med_topup: { p1: '100% (自選)', p2: false, p3: false, p4: false, p5: false },
             baby: { p1: false, p2: false, p3: '20% (嬰兒特別)', p4: '出生即受保\n父母/子女額外20%', p5: false },
             family_care: { 
                 p1: false, p2: false, p3: false, 
                 p4: {
                     s: '父母/子女額外20%',
-                    f: '家添守護 (自選權益)：\n<span class="red-highlight">父母/子女身故或患上指定危疾</span>(癌症/心/中風)，可獲<span class="red-highlight">額外原有投保額的20%</span>。每名受保父母/子女最高賠償20萬港元/2.5萬美元。'
+                    f: '家添守護 (自選權益)：\n<span class="red-highlight">父母/子女身故或患上指定危疾</span>(癌症/心/中風)，可獲<span class="red-highlight">額外原有投保額的20%</span>。每名受保父母/子女最高賠償20萬港元/2.5萬美元. '
                 }, 
                 p5: {
                     s: '父母/子女額外20%\n(+身故20%)',
@@ -712,7 +744,23 @@ createApp({
         });
 
         // ================= 動態推演引擎 =================
-        const simulationProducts = ['p5', 'p4', 'p3', 'p1'];
+        const simSelected = ref(['p5', 'p4', 'p3', 'p1']);
+        
+        const toggleSimProduct = (pid) => {
+            if (simSelected.value.includes(pid)) {
+                if (simSelected.value.length > 1) { // 確保最少顯示一個產品
+                    simSelected.value = simSelected.value.filter(id => id !== pid);
+                }
+            } else {
+                simSelected.value.push(pid);
+            }
+        };
+
+        const simulationProducts = computed(() => {
+            const order = ['p5', 'p4', 'p3', 'p1'];
+            return order.filter(id => simSelected.value.includes(id));
+        });
+
         const activePreset = ref('peter');
         
         const profile = ref({ name: '', age: 0, sumAssured: 0, hasFamilyCare: false, hasSpouseWaiver: false });
@@ -767,6 +815,8 @@ createApp({
             profile.value = JSON.parse(JSON.stringify(data.profile));
             oldAge.value = profile.value.age; 
             customEvents.value = JSON.parse(JSON.stringify(data.events));
+            // 載入預設劇本時重置顯示全部產品
+            simSelected.value = ['p5', 'p4', 'p3', 'p1'];
             runSimulation();
         };
 
@@ -1142,13 +1192,13 @@ createApp({
         const p4OverviewData = computed(() => {
             const isBelow35 = p4AgeGroup.value === 'below35';
             return [
-                { id: 1, item: '危疾權益', mechanism: '確診 62 種主要危疾之一，支付 100% 現有投保額。', type: '基礎賠償', pct: 100 },
-                { id: 2, item: '指定危疾之多重權益', mechanism: '針對癌症、急性心肌梗塞、中風、亞爾茲默氏病、腎衰竭及柏金遜症提供額外 7 次賠償。\n• 第1及第2次：<span class="red-highlight">各賠 120%</span>\n• 第3至第7次：<span class="red-highlight">各賠 150%</span>', type: '額外賠償', pct: 990 },
-                { id: 3, item: '額外保障權益', mechanism: isBelow35 ? '投保年齡為 35 歲或以下，於首 15 個保單週年日前患上受保危疾或身故，<span class="red-highlight">額外支付保額 75%。</span>' : '投保年齡為 36 歲或以上，於首 15 個保單週年日前患上受保危疾或身故，<span class="red-highlight">額外支付保額 60%。</span>', type: '額外賠償', pct: isBelow35 ? 75 : 60 },
-                { id: 4, item: '3大疾病現金權益', mechanism: '• 癌症：確診滿 1 年後持續接受積極治療，<span class="red-highlight">每年派發 10%，最長 5 年（共 50%）</span>。\n• 心臟病/中風：確診後每月派發 1%，<span class="red-highlight">最長 12 個月（共 12%）</span>。', type: '額外賠償', pct: 62 },
+                { id: 1, item: '危疾權益', mechanism: '<span class="red-highlight">確診 62 種主要危疾之一</span>，支付 100% 現有投保額。', type: '基礎賠償', pct: 100 },
+                { id: 2, item: '指定危疾之多重權益', mechanism: '針對癌症、急性心肌梗塞、中風、亞爾茲默氏病、腎衰竭及柏金遜症提供<span class="red-highlight">額外 7 次賠償</span>。\n• <span class="red-highlight">第1及第2次：各賠 120%</span>\n• <span class="red-highlight">第3至第7次：各賠 150%</span>', type: '額外賠償', pct: 990 },
+                { id: 3, item: '額外保障權益', mechanism: isBelow35 ? '投保年齡為 35 歲或以下，於首 15 個保單週年日前患上受保危疾或身故，<span class="red-highlight">額外支付保額 75%</span>。' : '投保年齡為 36 歲或以上，於首 15 個保單週年日前患上受保危疾或身故，<span class="red-highlight">額外支付保額 60%</span>。', type: '額外賠償', pct: isBelow35 ? 75 : 60 },
+                { id: 4, item: '3大疾病現金權益', mechanism: '• 癌症：確診滿 1 年後持續接受積極治療，<span class="red-highlight">每年派發 10%</span>，最長 5 年（共 50%）。\n• 心臟病/中風：確診後<span class="red-highlight">每月派發 1%</span>，最長 12 個月（共 12%）。', type: '額外賠償', pct: 62 },
                 { id: 5, item: '重大醫療護理權益', mechanism: '連續入住深切治療部(ICU)最少3天，可預支保額的 20%。\n（此屬預支賠償，會扣減現有保額，不計算入額外最高限額）', type: '預支賠償', pct: 0 },
-                { id: 6, item: '生活守護權益', mechanism: '若入住深切治療部(ICU)連續3天或以上並需使用侵入性維生支持，且符合指定條件（如住院10天/終身服藥/指定麻醉手術）：\n• <span class="red-highlight">符合1項條件：額外賠償 50%\n• 符合2項或以上：額外賠償 100%', type: '額外賠償', pct: 100 },
-                { id: 7, item: '指定危疾之危疾醫療增值權益', mechanism: '針對癌症、急性心肌梗塞或中風，實報實銷指定醫療開支（例如處方試驗性藥物），最高為保額的 20%。', type: '額外賠償', pct: 20 },
+                { id: 6, item: '生活守護權益', mechanism: '若入住深切治療部(ICU)連續3天或以上並需使用侵入性維生支持，且符合指定條件（如住院10天/終身服藥/指定麻醉手術）：\n• 符合1項條件：<span class="red-highlight">額外賠償 50%</span>\n• 符合2項或以上：<span class="red-highlight">額外賠償 100%</span>', type: '額外賠償', pct: 100 },
+                { id: 7, item: '指定危疾之危疾醫療增值權益', mechanism: '針對癌症、急性心肌梗塞或中風，實報實銷指定醫療開支（例如處方試驗性藥物），<span class="red-highlight">最高為保額的 20%</span>。', type: '額外賠償', pct: 20 },
                 { id: 8, item: '特別疾病權益', mechanism: '確診 65 種特別疾病之一，每次預支保額的 20%（原位癌/早期癌症最多預支2次，其他疾病每次1次）。\n（此屬預支賠償，會扣減現有保額）', type: '預支賠償', pct: 0 },
                 { id: 9, item: '嬰兒特別疾病權益', mechanism: '保障 12 種嬰兒特別疾病，預支保額的 20%。\n（此屬預支賠償，會扣減現有保額）', type: '預支賠償', pct: 0 },
                 { id: 10, item: '生育治療權益', mechanism: '因醫療需要（如確診指定癌症）而接受由註冊專科醫生建議之生育治療，額外賠償 10%。', type: '額外賠償', pct: 10 },
@@ -1161,7 +1211,7 @@ createApp({
             return p4OverviewData.value.reduce((sum, row) => sum + row.pct, 0);
         });
 
-        // --- 新增：P5 緻尚保全覽變數 ---
+        // --- P5 緻尚保全覽變數 ---
         const p5AgeGroup = ref('below35');
 
         const p5OverviewData = computed(() => {
@@ -1185,6 +1235,57 @@ createApp({
             return p5OverviewData.value.reduce((sum, row) => sum + (typeof row.pct === 'number' ? row.pct : 0), 0);
         });
 
+        // 新增：PDF 匯出核心邏輯
+        const exportToPDF = async () => {
+            isExporting.value = true;
+            await Vue.nextTick();
+            
+            setTimeout(async () => {
+                try {
+                    const element = document.getElementById('app');
+                    
+                    const canvas = await html2canvas(element, {
+                        scale: 1.5, 
+                        useCORS: true,
+                        logging: false,
+                        backgroundColor: '#fbfbfd',
+                        // 忽略懸浮按鈕和頁尾，讓 PDF 乾淨
+                        ignoreElements: (el) => el.classList.contains('fa-file-pdf') || el.tagName === 'FOOTER'
+                    });
+
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pageHeight = pdf.internal.pageSize.getHeight();
+                    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                    
+                    const imgData = canvas.toDataURL('image/jpeg', 0.6); 
+                    
+                    let heightLeft = pdfHeight;
+                    let position = 0;
+
+                    pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight);
+                    heightLeft -= pageHeight;
+
+                    while (heightLeft > 0) {
+                        position = heightLeft - pdfHeight;
+                        pdf.addPage();
+                        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight);
+                        heightLeft -= pageHeight;
+                    }
+
+                    pdf.save(`FWD_Comparison_${new Date().toISOString().slice(0,10)}.pdf`);
+                    
+                } catch (error) {
+                    console.error("PDF Export Failed:", error);
+                    alert("匯出失敗，請重試。");
+                } finally {
+                    isExporting.value = false;
+                }
+            }, 100);
+        };
+
         // 初始化
         onMounted(() => {
             loadPreset('peter'); // 預設載入 Peter 案例展示
@@ -1197,11 +1298,14 @@ createApp({
             // 推演變數
             activePreset, loadPreset, profile, customEvents, runSimulation, handleAgeChange,
             calculatedResults, calculatedTotals, formatMoney, hasAnnuityTriggered, simulationProducts,
+            simSelected, toggleSimProduct, 
             dynamicTakeaways,
             // P4 全覽變數
             p4AgeGroup, p4OverviewData, p4TotalPct,
             // P5 全覽變數
-            p5AgeGroup, p5OverviewData, p5TotalPct
+            p5AgeGroup, p5OverviewData, p5TotalPct,
+            // 新增匯出
+            isExporting, exportToPDF
         };
     }
 }).mount('#app');
